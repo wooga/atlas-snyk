@@ -26,7 +26,7 @@ import static wooga.gradle.snyk.cli.SnykCLIOptions.*
 class MonitorIntegrationSpec extends SnykCheckBaseIntegrationSpec<Monitor> {
 
     @Unroll("can set property #property with #method and type #type")
-    def "can set property SBSTask"() {
+    def "can set property SnykTask"() {
         given: "a task to read back the value"
         def query = new PropertyQueryTaskWriter("${subjectUnderTestName}.${property}")
         query.write(buildFile)
