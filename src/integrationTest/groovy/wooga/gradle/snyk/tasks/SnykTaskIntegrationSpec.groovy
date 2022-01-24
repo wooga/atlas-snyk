@@ -16,10 +16,15 @@
 
 package wooga.gradle.snyk.tasks
 
+import com.wooga.gradle.test.PropertyQueryTaskWriter
+import spock.lang.Unroll
 import wooga.gradle.snyk.SnykIntegrationSpec
 import wooga.gradle.snyk.SnykPlugin
 
 import java.lang.reflect.ParameterizedType
+
+import static com.wooga.gradle.test.PropertyUtils.toProviderSet
+import static com.wooga.gradle.test.PropertyUtils.toSetter
 
 abstract class SnykTaskIntegrationSpec<T extends SnykTask> extends SnykIntegrationSpec {
     Class<T> getSubjectUnderTestClass() {
@@ -52,5 +57,55 @@ abstract class SnykTaskIntegrationSpec<T extends SnykTask> extends SnykIntegrati
         
         task $subjectUnderTestName(type: ${subjectUnderTestTypeName})
         """.stripIndent()
+    }
+
+    @Unroll("can set property #property with #method and type #type")
+    def "can set property SBSTask"() {
+        given: "a task to read back the value"
+        def query = new PropertyQueryTaskWriter("${subjectUnderTestName}.${property}")
+        query.write(buildFile)
+
+        and: "a set property"
+        appendToSubjectTask("${method}($value)")
+
+        when:
+        def result = runTasksSuccessfully(query.taskName)
+
+        then:
+        query.matches(result, expectedValue)
+
+        where:
+        property     | method                  | rawValue             | returnValue | type
+        "token"      | toProviderSet(property) | "some_token"         | _           | "String"
+        "token"      | toProviderSet(property) | "some_token"         | _           | "Provider<String>"
+        "token"      | toSetter(property)      | "some_token"         | _           | "String"
+        "token"      | toSetter(property)      | "some_token"         | _           | "Provider<String>"
+
+        "logFile"    | toProviderSet(property) | "/path/to/logFile"   | _           | "File"
+        "logFile"    | toProviderSet(property) | "/path/to/logFile"   | _           | "Provider<RegularFile>"
+        "logFile"    | toSetter(property)      | "/path/to/logFile"   | _           | "File"
+        "logFile"    | toSetter(property)      | "/path/to/logFile"   | _           | "Provider<RegularFile>"
+
+        "executable" | toProviderSet(property) | "snyk1"              | _           | "String"
+        "executable" | toProviderSet(property) | "snyk2"              | _           | "Provider<String>"
+        "executable" | toSetter(property)      | "snyk3"              | _           | "String"
+        "executable" | toSetter(property)      | "snyk4"              | _           | "Provider<String>"
+
+        "snykPath"   | toProviderSet(property) | "/path/to/snyk_home" | _           | "File"
+        "snykPath"   | toProviderSet(property) | "/path/to/snyk_home" | _           | "Provider<Directory>"
+        "snykPath"   | toSetter(property)      | "/path/to/snyk_home" | _           | "File"
+        "snykPath"   | toSetter(property)      | "/path/to/snyk_home" | _           | "Provider<Directory>"
+
+        "insecure"   | toProviderSet(property) | true                 | _           | "Boolean"
+        "insecure"   | toProviderSet(property) | false                | _           | "Provider<Boolean>"
+        "insecure"   | toSetter(property)      | true                 | _           | "Boolean"
+        "insecure"   | toSetter(property)      | false                | _           | "Provider<Boolean>"
+
+        "debug"      | toProviderSet(property) | true                 | _           | "Boolean"
+        "debug"      | toProviderSet(property) | false                | _           | "Provider<Boolean>"
+        "debug"      | toSetter(property)      | true                 | _           | "Boolean"
+        "debug"      | toSetter(property)      | false                | _           | "Provider<Boolean>"
+        value = wrapValueBasedOnType(rawValue, type, wrapValueFallback)
+        expectedValue = returnValue == _ ? rawValue : returnValue
     }
 }

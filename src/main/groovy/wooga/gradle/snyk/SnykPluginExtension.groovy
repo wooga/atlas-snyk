@@ -22,7 +22,7 @@ import wooga.gradle.snyk.cli.CommonArgumentSpec
 import wooga.gradle.snyk.cli.SnykMonitorArgumentsSpec
 import wooga.gradle.snyk.cli.SnykTaskSpec
 
-trait SnykPluginExtension extends SnykMonitorArgumentsSpec, SnykTaskSpec, CommonArgumentSpec {
+trait SnykPluginExtension implements SnykMonitorArgumentsSpec, SnykTaskSpec, CommonArgumentSpec {
     private final Property<Boolean> autoDownloadSnykCli = objects.property(Boolean)
 
     Property<Boolean> getAutoDownloadSnykCli() {
