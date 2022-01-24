@@ -16,6 +16,38 @@
 
 package wooga.gradle.snyk
 
-interface SnykPluginExtension {
+import org.gradle.api.provider.Property
+import org.gradle.api.provider.Provider
+import wooga.gradle.snyk.cli.CommonArgumentSpec
+import wooga.gradle.snyk.cli.SnykMonitorArgumentsSpec
+import wooga.gradle.snyk.cli.SnykTaskSpec
 
+trait SnykPluginExtension extends SnykMonitorArgumentsSpec, SnykTaskSpec, CommonArgumentSpec {
+    private final Property<Boolean> autoDownloadSnykCli = objects.property(Boolean)
+
+    Property<Boolean> getAutoDownloadSnykCli() {
+        autoDownloadSnykCli
+    }
+
+    void setAutoDownloadSnykCli(Provider<Boolean> value) {
+        autoDownloadSnykCli.set(value)
+    }
+
+    void setAutoDownloadSnykCli(Boolean value) {
+        autoDownloadSnykCli.set(value)
+    }
+
+    private final Property<Boolean> autoUpdateSnykCli = objects.property(Boolean)
+
+    Property<Boolean> getAutoUpdateSnykCli() {
+        autoUpdateSnykCli
+    }
+
+    void setAutoUpdateSnykCli(Provider<Boolean> value) {
+        autoUpdateSnykCli.set(value)
+    }
+
+    void setAutoUpdateSnykCli(Boolean value) {
+        autoUpdateSnykCli.set(value)
+    }
 }

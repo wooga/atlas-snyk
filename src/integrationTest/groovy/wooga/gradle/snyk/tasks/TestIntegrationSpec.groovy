@@ -14,8 +14,14 @@
  * limitations under the License.
  */
 
-package wooga.gradle.snyk
+package wooga.gradle.snyk.tasks
 
-class SnykConsts {
+
+import spock.lang.Unroll
+
+class TestIntegrationSpec extends SnykCheckBaseIntegrationSpec<Test> {
+
+
+
 
 }

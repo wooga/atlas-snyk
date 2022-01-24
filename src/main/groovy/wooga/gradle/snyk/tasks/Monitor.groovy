@@ -16,20 +16,14 @@
 
 package wooga.gradle.snyk.tasks
 
-import wooga.gradle.snyk.IntegrationSpec
-import wooga.gradle.snyk.SnykPlugin
+import org.gradle.api.provider.Provider
+import wooga.gradle.snyk.cli.CommonArgumentSpec
+import wooga.gradle.snyk.cli.SnykMonitorArgumentsSpec
 
-class SnykIntegrationSpec extends IntegrationSpec {
+class Monitor extends SnykTask implements SnykMonitorArgumentsSpec, CommonArgumentSpec {
 
-    def setup() {
-        buildFile << """
-            ${applyPlugin(SnykPlugin)}
-        """.stripIndent()
+    @Override
+    Provider<List<String>> getArguments() {
+        return null
     }
-
-    def "can run task successfully"() {
-        expect:
-        runTasksSuccessfully("example")
-    }
-
 }

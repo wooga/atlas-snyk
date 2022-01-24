@@ -16,9 +16,12 @@
 
 package wooga.gradle.snyk
 
-import wooga.gradle.snyk.tasks.Snyk
+import com.wooga.gradle.test.IntegrationSpec
 
-class IntegrationSpec extends com.wooga.gradle.test.IntegrationSpec {
+import static wooga.gradle.snyk.cli.SnykCLIOptions.*
+
+
+class SnykIntegrationSpec extends IntegrationSpec {
 
     static final String extensionName = SnykPlugin.EXTENSION_NAME
 
@@ -40,6 +43,18 @@ class IntegrationSpec extends com.wooga.gradle.test.IntegrationSpec {
 
     static wrapValueFallback = { Object rawValue, String type, Closure<String> fallback ->
         switch (type) {
+            case VulnerablePathsOption.getSimpleName():
+                return "${VulnerablePathsOption.canonicalName}.${rawValue.toString()}".toString()
+            case EnvironmentOption.getSimpleName():
+                return "${EnvironmentOption.canonicalName}.${rawValue.toString()}".toString()
+            case LifecycleOption.getSimpleName():
+                return "${LifecycleOption.canonicalName}.${rawValue.toString()}".toString()
+            case BusinessCriticalityOption.getSimpleName():
+                return "${BusinessCriticalityOption.canonicalName}.${rawValue.toString()}".toString()
+            case SeverityThresholdOption.getSimpleName():
+                return "${SeverityThresholdOption.canonicalName}.${rawValue.toString()}".toString()
+            case FailOnOption.getSimpleName():
+                return "${FailOnOption.canonicalName}.${rawValue.toString()}".toString()
             default:
                 return rawValue.toString()
         }

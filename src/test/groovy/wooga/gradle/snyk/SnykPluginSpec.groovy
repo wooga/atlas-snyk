@@ -18,7 +18,6 @@ package wooga.gradle.snyk
 
 import nebula.test.ProjectSpec
 import spock.lang.Unroll
-import wooga.gradle.snyk.tasks.Snyk
 
 class SnykPluginSpec extends ProjectSpec {
 
