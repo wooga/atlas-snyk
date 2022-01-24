@@ -16,16 +16,25 @@
 
 package wooga.gradle.snyk.tasks
 
+import com.wooga.gradle.PlatformUtils
 import com.wooga.gradle.test.PropertyQueryTaskWriter
+import org.apache.tools.ant.util.FileUtils
+import org.gradle.api.file.Directory
+import org.gradle.api.file.RegularFile
 import spock.lang.Unroll
 import wooga.gradle.snyk.cli.FailOnOption
 import wooga.gradle.snyk.cli.SeverityThresholdOption
 import wooga.gradle.snyk.cli.VulnerablePathsOption
 
+import java.nio.file.Files
+
+import static com.wooga.gradle.PlatformUtils.escapedPath
 import static com.wooga.gradle.test.PropertyUtils.toProviderSet
 import static com.wooga.gradle.test.PropertyUtils.toSetter
 
 abstract class SnykCheckBaseIntegrationSpec<T extends SnykTask> extends SnykTaskIntegrationSpec<T> {
+
+    abstract String getOptionName()
 
     @Unroll("can set property #property with cli option #cliOption")
     def "can set property via cli option"() {
@@ -127,13 +136,13 @@ abstract class SnykCheckBaseIntegrationSpec<T extends SnykTask> extends SnykTask
         "detectionDepth"                 | toSetter(property)      | 4                                                           | _                                                 | "Provider<Integer>"
         "detectionDepth"                 | property                | 4                                                           | _                                                 | "String"
 
-        "exclude"                        | toProviderSet(property) | [osPath("/path/to/dir")]                                    | _                                                 | "List<Directory>"
-        "exclude"                        | toProviderSet(property) | [osPath("/path/to/dir")]                                    | _                                                 | "Provider<List<Directory>>"
-        "exclude"                        | toSetter(property)      | [osPath("/path/to/dir")]                                    | _                                                 | "List<Directory>"
-        "exclude"                        | toSetter(property)      | [osPath("/path/to/dir")]                                    | _                                                 | "Provider<List<Directory>>"
-        "exclude"                        | property                | [osPath("/path/to/dir")]                                    | _                                                 | "List<Directory>"
-        "exclude"                        | property                | osPath("/path/to/dir")                                      | [osPath('/path/to/dir')]                          | "Directory"
-        "exclude"                        | property                | [osPath("/path/to/dir")]                                    | _                                                 | "Directory..."
+        "exclude"                        | toProviderSet(property) | [osPath("/path/to/dir")]                                    | _                                                 | "List<File>"
+        "exclude"                        | toProviderSet(property) | [osPath("/path/to/dir")]                                    | _                                                 | "Provider<List<File>>"
+        "exclude"                        | toSetter(property)      | [osPath("/path/to/dir")]                                    | _                                                 | "List<File>"
+        "exclude"                        | toSetter(property)      | [osPath("/path/to/dir")]                                    | _                                                 | "Provider<List<File>>"
+        "exclude"                        | property                | [osPath("/path/to/dir")]                                    | _                                                 | "List<File>"
+        "exclude"                        | property                | osPath("/path/to/dir")                                      | [osPath('/path/to/dir')]                          | "File"
+        "exclude"                        | property                | [osPath("/path/to/dir")]                                    | _                                                 | "File..."
         "exclude"                        | "excludeOption"         | [osPath('/path/to/dir'), osPath('/path/to/dir2')].join(',') | [osPath('/path/to/dir'), osPath('/path/to/dir2')] | "String"
 
         "pruneRepeatedSubDependencies"   | toProviderSet(property) | true                                                        | _                                                 | "Boolean"
@@ -371,5 +380,108 @@ abstract class SnykCheckBaseIntegrationSpec<T extends SnykTask> extends SnykTask
         "--sub-project"                    | _
         "--target-reference"               | _
         "--yarn-workspaces"                | _
+    }
+
+    @Unroll()
+    def "composes correct CLI string from #setters -> #expected"() {
+
+        given: "a snyk wrapper"
+        def wrapper = generateBatchWrapper("snyk-wrapper")
+        def wrapperPath = escapedPath(wrapper.path)
+        buildFile << """
+        ${extensionName}.snykPath=${wrapValueBasedOnType(wrapperPath, Directory)}
+        """.stripIndent()
+
+        and: "a mock file"
+        createFile(mockFile)
+
+        and: "a set of properties being set onto the task"
+        def platformProjectDir = projectDir.path.split("\\\\").join("/")
+        for (prop in setters) {
+            prop = prop.replaceAll("#projectDir#", platformProjectDir)
+            buildFile << "\n${subjectUnderTestName}.${prop}"
+        }
+
+        when:
+        def result = runTasksSuccessfully(subjectUnderTestName)
+        expected = expected.replaceAll("#projectDir#", escapedPath(projectDir.path))
+
+        then:
+        outputContains(result, expected)
+
+        where:
+        setters                                                                 | flags
+        ["allProjects=true"]                                                    | "--all-projects"
+        ["allProjects=false"]                                                   | ""
+        ["allSubProjects=true"]                                                 | "--all-sub-projects"
+        ["allSubProjects=false"]                                                | ""
+        ["allProjects=true", "allSubProjects=true"]                             | "--all-projects --all-sub-projects"
+        ["projectName=${wrapValueBasedOnType("pancakes", String)}"]             | "--project-name=pancakes"
+        ["detectionDepth=7"]                                                    | "--detection-depth=7"
+        ["exclude=[file(${wrapValueBasedOnType("foo.bar", String)})]"]          | "--exclude=${new File("#projectDir#/foo.bar").path}"
+        ["pruneRepeatedSubDependencies=true"]                                   | "--prune-repeated-subdependencies"
+        ["printDependencies=true"]                                              | "--print-deps"
+        ["remoteRepoUrl=${wrapValueBasedOnType("foo.bar/pancakes", String)}"]   | "--remote-repo-url"
+        ["includeDevelopmentDependencies=true"]                                 | "--dev"
+        ["orgName=${wrapValueBasedOnType("PANCAKES", String)}"]                 | "--org=PANCAKES"
+        ["packageFile = ${wrapValueBasedOnType("#projectDir#/foo.bar", File)}"] | "--file=${new File("#projectDir#/foo.bar").path}"
+        ["ignorePolicy=true"]                                                   | "--ignore-policy"
+        ["showVulnerablePaths=${wrapValueBasedOnType("all", String)}"]          | "--show-vulnerable-paths=all"
+        ["targetReference=${wrapValueBasedOnType("foobar", String)}"]           | "--target-reference"
+        ["policyPath=file(${wrapValueBasedOnType("foo.bar", String)})"]         | "--policy-path=${new File("#projectDir#/foo.bar").path}"
+        ["printJson=true"]                                                      | "--json"
+        ["jsonOutputPath=file(${wrapValueBasedOnType("foo.bar", String)})"]     | "--json-file-output=${new File("#projectDir#/foo.bar").path}"
+        ["printSarif=true"]                                                     | "--sarif"
+        ["sarifOutputPath=file(${wrapValueBasedOnType("foo.bar", String)})"]    | "--sarif-file-output=${new File("#projectDir#/foo.bar").path}"
+        ["severityThreshold=${wrapValueBasedOnType("critical", String)}"]       | "--severity-threshold=critical"
+        ["failOn=${wrapValueBasedOnType("all", String)}"]                       | "--fail-on=all"
+
+        expected = flags.toString().empty ? optionName : "${optionName} ${flags}"
+        mockFile = "foo.bar"
+    }
+
+    @Override
+    String wrapValueBasedOnType(Object rawValue, Class type) {
+        if (type.isEnum() && rawValue != null) {
+            return "${type.name}.${rawValue}"
+        }
+        return super.wrapValueBasedOnType(rawValue, type)
+    }
+
+    protected static File generateBatchWrapper(String fileName, Boolean printEnvironment = false, File baseDirectory = null) {
+        File wrapper
+
+        wrapper = Files.createTempFile(fileName, ".bat").toFile()
+        wrapper.executable = true
+        if (PlatformUtils.windows) {
+            wrapper << """
+                    @echo off
+                    echo [ARGUMENTS]:
+                    echo %*
+                """.stripIndent()
+
+            if (printEnvironment) {
+                wrapper << """
+                    echo [ENVIRONMENT]:
+                    set
+                """.stripIndent()
+            }
+
+        } else {
+            wrapper << """
+                    #!/usr/bin/env bash
+                    echo [ARGUMENTS]:
+                    echo \$@
+                """.stripIndent()
+
+            if (printEnvironment) {
+                wrapper << """
+                    echo [ENVIRONMENT]:
+                    env
+                """.stripIndent()
+            }
+        }
+
+        wrapper
     }
 }

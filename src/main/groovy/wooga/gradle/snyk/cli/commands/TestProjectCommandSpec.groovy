@@ -14,10 +14,9 @@
  * limitations under the License.
  */
 
-package wooga.gradle.snyk.cli
+package wooga.gradle.snyk.cli.commands
 
-import com.wooga.gradle.BaseSpec
-import org.gradle.api.file.Directory
+
 import org.gradle.api.file.RegularFile
 import org.gradle.api.file.RegularFileProperty
 import org.gradle.api.provider.ListProperty
@@ -28,8 +27,149 @@ import org.gradle.api.tasks.InputFile
 import org.gradle.api.tasks.Optional
 import org.gradle.api.tasks.OutputFile
 import org.gradle.api.tasks.options.Option
+import wooga.gradle.OptionMapper
+import wooga.gradle.snyk.cli.FailOnOption
+import wooga.gradle.snyk.cli.SeverityThresholdOption
+import wooga.gradle.snyk.cli.VulnerablePathsOption
+import wooga.gradle.snyk.cli.options.TestOption
 
-trait SnykTestArgumentSpec extends BaseSpec implements ContextSpecificArgumentSpec {
+/**
+ * Provides properties for the Test command
+ */
+trait TestProjectCommandSpec extends ProjectCommandSpec implements OptionMapper<TestOption> {
+
+    @Override
+    String getOption(TestOption option) {
+        def value = null
+
+        switch (option) {
+            case TestOption.allProjects:
+                if (allProjects.present && allProjects.get()) {
+                    value = true
+                }
+                break
+
+            case TestOption.projectName:
+                if (projectName.present) {
+                    value = projectName.get()
+                }
+                break
+
+            case TestOption.detectionDepth:
+                if (detectionDepth.present) {
+                    value = detectionDepth.get()
+                }
+                break
+
+            case TestOption.exclude:
+                if (exclude.present) {
+                    value = exclude.get()
+                }
+                break
+
+            case TestOption.pruneRepeatedSubDependencies:
+                if (pruneRepeatedSubDependencies.present && pruneRepeatedSubDependencies.get()) {
+                    value = true
+                }
+                break
+
+            case TestOption.printDependencies:
+                if (printDependencies.present && printDependencies.get()) {
+                    value = true
+                }
+                break
+
+            case TestOption.remoteRepoUrl:
+                if (remoteRepoUrl.present) {
+                    value = remoteRepoUrl.get()
+                }
+                break
+
+            case TestOption.includeDevelopmentDependencies:
+                if (includeDevelopmentDependencies.present && includeDevelopmentDependencies.get()) {
+                    value = true
+                }
+                break
+
+            case TestOption.orgName:
+                if (orgName.present) {
+                    value = orgName.get()
+                }
+                break
+
+            case TestOption.packageFile:
+                if (packageFile.present) {
+                    value = packageFile.asFile.get()
+                }
+                break
+
+            case TestOption.ignorePolicy:
+                if (ignorePolicy.present && ignorePolicy.get()) {
+                    value = true
+                }
+                break
+
+            case TestOption.showVulnerablePaths:
+                if (showVulnerablePaths.present) {
+                    value = showVulnerablePaths.get()
+                }
+                break
+
+            case TestOption.targetReference:
+                if (targetReference.present) {
+                    value = targetReference.get()
+                }
+                break
+
+            case TestOption.policyPath:
+                if (policyPath.present) {
+                    value = policyPath.asFile.get()
+                }
+                break
+
+            case TestOption.printJson:
+                if (printJson.present && printJson.get()) {
+                    value = true
+                }
+                break
+
+            case TestOption.jsonOutputPath:
+                if (jsonOutputPath.present) {
+                    value = jsonOutputPath.getAsFile().get()
+                }
+                break
+
+            case TestOption.printSarif:
+                if (printSarif.present && printSarif.get()) {
+                    value = true
+                }
+                break
+
+            case TestOption.sarifOutputPath:
+                if (sarifOutputPath.present) {
+                    value = sarifOutputPath.getAsFile().get()
+                }
+                break
+
+            case TestOption.severityThreshold:
+                if (severityThreshold.present) {
+                    value = severityThreshold.get()
+                }
+                break
+
+            case TestOption.failOn:
+                if (failOn.present) {
+                    value = failOn.get()
+                }
+                break
+        }
+
+        if (value != null) {
+            def output = option.compose(value)
+            return output
+        }
+        null
+    }
 
     private final Property<Boolean> allProjects = objects.property(Boolean)
 
@@ -77,31 +217,32 @@ trait SnykTestArgumentSpec extends BaseSpec implements ContextSpecificArgumentSp
         detectionDepth.set(Integer.parseInt(value))
     }
 
-    private final ListProperty<Directory> exclude = objects.listProperty(Directory)
+    private final ListProperty<File> exclude = objects.listProperty(File)
 
+    // TODO: Make sure to check that the File objects passed in are actually directories
     @Input
     @Optional
-    ListProperty<Directory> getExclude() {
+    ListProperty<File> getExclude() {
         exclude
     }
 
-    void setExclude(Provider<Iterable<Directory>> values) {
+    void setExclude(Provider<Iterable<File>> values) {
         exclude.set(values)
     }
 
-    void setExclude(Iterable<Directory> values) {
+    void setExclude(Iterable<File> values) {
         exclude.set(values)
     }
 
-    void exclude(Directory value) {
+    void exclude(File value) {
         exclude.add(value)
     }
 
-    void exclude(Directory... values) {
+    void exclude(File... values) {
         exclude.addAll(values)
     }
 
-    void exclude(Iterable<Directory> values) {
+    void exclude(Iterable<File> values) {
         exclude.addAll(values)
     }
 
@@ -115,7 +256,6 @@ trait SnykTestArgumentSpec extends BaseSpec implements ContextSpecificArgumentSp
             layout.getProjectDirectory().dir(it)
         })
     }
-
 
     private final Property<Boolean> pruneRepeatedSubDependencies = objects.property(Boolean)
 
@@ -292,6 +432,10 @@ trait SnykTestArgumentSpec extends BaseSpec implements ContextSpecificArgumentSp
         showVulnerablePaths.set(value)
     }
 
+    void setShowVulnerablePaths(String value) {
+        showVulnerablePaths.set(value as VulnerablePathsOption)
+    }
+
     private final Property<String> projectName = objects.property(String)
 
     @Input
@@ -348,6 +492,10 @@ trait SnykTestArgumentSpec extends BaseSpec implements ContextSpecificArgumentSp
         policyPath.set(value)
     }
 
+    void setPolicyPath(String value) {
+        policyPath.set(new File(value))
+    }
+
     @Option(option = "policy-path", description = """
     Manually pass a path to a .snyk policy file.
     """)
@@ -388,6 +536,10 @@ trait SnykTestArgumentSpec extends BaseSpec implements ContextSpecificArgumentSp
 
     void setJsonOutputPath(File value) {
         jsonOutputPath.set(value)
+    }
+
+    void setJsonOutputPath(String value) {
+        jsonOutputPath.set(new File(value))
     }
 
     @Option(option = "json-file-output", description = """
@@ -435,6 +587,10 @@ trait SnykTestArgumentSpec extends BaseSpec implements ContextSpecificArgumentSp
         sarifOutputPath.set(value)
     }
 
+    void setSarifOutputPath(String path) {
+        sarifOutputPath.set(new File(path))
+    }
+
     @Option(option = "sarif-file-output", description = """
     Save test output in SARIF format directly to the <OUTPUT_FILE_PATH> file, regardless of whether
     or not you use the --sarif option.
@@ -464,6 +620,10 @@ trait SnykTestArgumentSpec extends BaseSpec implements ContextSpecificArgumentSp
         severityThreshold.set(value)
     }
 
+    void setSeverityThreshold(String value) {
+        severityThreshold.set(value as SeverityThresholdOption)
+    }
+
     private final Property<FailOnOption> failOn = objects.property(FailOnOption)
 
     @Input
@@ -485,6 +645,10 @@ trait SnykTestArgumentSpec extends BaseSpec implements ContextSpecificArgumentSp
 
     void setFailOn(FailOnOption value) {
         failOn.set(value)
+    }
+
+    void setFailOn(String value) {
+        failOn.set(value as FailOnOption)
     }
 
     private final ListProperty<String> compilerArguments = objects.listProperty(String)
@@ -514,5 +678,4 @@ trait SnykTestArgumentSpec extends BaseSpec implements ContextSpecificArgumentSp
     void compilerArguments(Iterable<String> arguments) {
         compilerArguments.addAll(arguments)
     }
-
 }

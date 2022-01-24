@@ -20,10 +20,10 @@ import org.gradle.api.provider.Property
 import org.gradle.api.provider.Provider
 import org.gradle.api.tasks.Input
 import wooga.gradle.snyk.cli.CommonArgumentSpec
-import wooga.gradle.snyk.cli.SnykMonitorArgumentsSpec
+import wooga.gradle.snyk.cli.commands.MonitorProjectCommandSpec
 import wooga.gradle.snyk.cli.SnykTaskSpec
 
-trait SnykPluginExtension implements SnykMonitorArgumentsSpec, SnykTaskSpec, CommonArgumentSpec {
+trait SnykPluginExtension implements MonitorProjectCommandSpec, SnykTaskSpec, CommonArgumentSpec {
     private final Property<Boolean> autoDownloadSnykCli = objects.property(Boolean)
 
     Property<Boolean> getAutoDownloadSnykCli() {

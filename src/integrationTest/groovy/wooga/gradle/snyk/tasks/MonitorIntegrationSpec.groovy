@@ -16,7 +16,9 @@
 
 package wooga.gradle.snyk.tasks
 
+import com.wooga.gradle.PlatformUtils
 import com.wooga.gradle.test.PropertyQueryTaskWriter
+import org.gradle.api.file.Directory
 import spock.lang.Unroll
 import wooga.gradle.snyk.cli.BusinessCriticalityOption
 import wooga.gradle.snyk.cli.EnvironmentOption
@@ -26,6 +28,11 @@ import static com.wooga.gradle.test.PropertyUtils.toProviderSet
 import static com.wooga.gradle.test.PropertyUtils.toSetter
 
 class MonitorIntegrationSpec extends SnykCheckBaseIntegrationSpec<Monitor> {
+
+    @Override
+    String getOptionName() {
+        "monitor"
+    }
 
     @Unroll("can set property #property with cli option #cliOption")
     def "can set property via cli option"() {
@@ -121,24 +128,39 @@ class MonitorIntegrationSpec extends SnykCheckBaseIntegrationSpec<Monitor> {
         expectedValue = returnValue == _ ? rawValue : returnValue
     }
 
-    @Unroll
-    def "help prints commandline flag '#commandlineFlag' description"() {
+    @Unroll()
+    def "composes correct CLI string from setters #setters -> #expected"() {
+
+        given: "a snyk wrapper"
+        def wrapper = generateBatchWrapper("snyk-wrapper")
+        def wrapperPath = PlatformUtils.escapedPath(wrapper.path)
+        buildFile << """
+  ${extensionName}.snykPath=${wrapValueBasedOnType(wrapperPath, Directory)}
+  """
+
+        and: "a set of properties being set onto the task"
+        for (prop in setters) {
+            buildFile << "\n${subjectUnderTestName}.${prop}"
+        }
+
         when:
-        def result = runTasksSuccessfully("help", "--task", subjectUnderTestName)
+        def result = runTasksSuccessfully(subjectUnderTestName)
 
         then:
-        result.standardOutput.contains("Description")
-        result.standardOutput.contains("Group")
-
-        result.standardOutput.contains(commandlineFlag)
+        outputContains(result, expected)
 
         where:
-        commandlineFlag                  | _
-        "--project-business-criticality" | _
-        "--project-environment"          | _
-        "--project-lifecycle"            | _
-        "--project-tags"                 | _
-        "--tags"                         | _
-        "--trust-policies"               | _
+        flags                                     | setters
+        ""                                        | ["trustPolicies=false"]
+        "--trust-policies"                        | ["trustPolicies=true"]
+        "--project-environment=frontend"          | ["projectEnvironment=\"frontend\""]
+        "--project-environment=frontend,backend"  | ["projectEnvironment=['frontend','backend']"]
+        "--project-lifecycle=sandbox"             | ["projectLifecycle='sandbox'"]
+        "--project-lifecycle=production,sandbox"  | ["projectLifecycle=['production','sandbox']"]
+        "--project-business-criticality=critical" | ["projectBusinessCriticality='critical'"]
+        "--project-business-criticality=high,low" | ["projectBusinessCriticality=['high','low']"]
+        "--project-tags=dept=finance,team=alpha"  | ["projectTags=['dept':'finance', 'team':'alpha']"]
+
+        expected = flags.empty ? "monitor" : "monitor ${flags}"
     }
 }

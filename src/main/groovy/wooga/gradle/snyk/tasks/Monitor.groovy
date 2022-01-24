@@ -16,15 +16,25 @@
 
 package wooga.gradle.snyk.tasks
 
-import org.gradle.api.provider.Provider
-import org.gradle.api.tasks.Input
-import wooga.gradle.snyk.cli.SnykMonitorArgumentsSpec
 
-class Monitor extends SnykTask implements SnykMonitorArgumentsSpec {
+import wooga.gradle.snyk.cli.options.MonitorOption
+import wooga.gradle.snyk.cli.commands.MonitorProjectCommandSpec
+import wooga.gradle.snyk.cli.options.ProjectOption
+import wooga.gradle.snyk.cli.options.TestOption
 
-    @Input
+/**
+ * The snyk monitor command creates a project in your Synk account to be continuously
+ * monitored for open source vulnerabilities and license issues.
+ * After running this command, log in to the Snyk website and view your projects to see the monitor.
+ * (https://docs.snyk.io/features/snyk-cli/commands/monitor)
+ */
+class Monitor extends SnykTask implements MonitorProjectCommandSpec {
+
     @Override
-    Provider<List<String>> getArguments() {
-        project.provider({ [] as List<String> })
+    void addMainOptions(List<String> args) {
+        args.add("monitor")
+        args.addAll(getMappedOptions(this, MonitorOption))
+        args.addAll(getMappedOptions(this, TestOption))
+        args.addAll(getMappedOptions(this, ProjectOption))
     }
 }

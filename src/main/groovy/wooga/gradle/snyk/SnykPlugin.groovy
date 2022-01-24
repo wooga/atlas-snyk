@@ -26,8 +26,8 @@ import wooga.gradle.snyk.cli.EnvironmentOption
 import wooga.gradle.snyk.cli.FailOnOption
 import wooga.gradle.snyk.cli.LifecycleOption
 import wooga.gradle.snyk.cli.SeverityThresholdOption
-import wooga.gradle.snyk.cli.SnykMonitorArgumentsSpec
-import wooga.gradle.snyk.cli.SnykTestArgumentSpec
+import wooga.gradle.snyk.cli.commands.MonitorProjectCommandSpec
+import wooga.gradle.snyk.cli.commands.TestProjectCommandSpec
 import wooga.gradle.snyk.cli.VulnerablePathsOption
 import wooga.gradle.snyk.internal.DefaultSnykPluginExtension
 import wooga.gradle.snyk.tasks.Monitor
@@ -65,9 +65,9 @@ class SnykPlugin implements Plugin<Project> {
 
         tasks.withType(SnykTask).configureEach {
             dependsOn(snykInstall)
-            it.executable.convention(extension.executable)
+            it.workingDirectory.convention(extension.workingDirectory)
+            it.executableName.convention(extension.executableName)
             it.snykPath.convention(extension.snykPath)
-            it.token.convention(extension.token)
             it.token.convention(extension.token)
             it.debug.convention(extension.debug)
             it.insecure.convention(extension.insecure)
@@ -75,7 +75,8 @@ class SnykPlugin implements Plugin<Project> {
         }
     }
 
-    private static mapExtensionPropertiesToTestTask(SnykTestArgumentSpec task, SnykPluginExtension extension) {
+    private static mapExtensionPropertiesToTestTask(TestProjectCommandSpec task, SnykPluginExtension extension) {
+
         task.allProjects.convention(extension.allProjects)
         task.detectionDepth.convention(extension.detectionDepth)
         task.exclude.convention(extension.exclude)
@@ -119,7 +120,7 @@ class SnykPlugin implements Plugin<Project> {
         task.scanAllUnmanaged.convention(extension.scanAllUnmanaged)
     }
 
-    private static mapExtensionPropertiesToMonitorTask(SnykMonitorArgumentsSpec task, SnykPluginExtension extension) {
+    private static mapExtensionPropertiesToMonitorTask(MonitorProjectCommandSpec task, SnykPluginExtension extension) {
         task.trustPolicies.convention(extension.trustPolicies)
         task.projectEnvironment.convention(extension.projectEnvironment)
         task.projectLifecycle.convention(extension.projectLifecycle)
@@ -133,7 +134,7 @@ class SnykPlugin implements Plugin<Project> {
             new File(project.gradle.gradleUserHomeDir, "atlas-snyk/${version}")
         })
 
-        extension.executable.convention(SnykConventions.executable.getStringValueProvider(project))
+        extension.executableName.convention(SnykConventions.executableName.getStringValueProvider(project))
         extension.snykVersion.convention(SnykConventions.snykVersion.getStringValueProvider(project))
         extension.snykPath.convention(SnykConventions.snykPath.getDirectoryValueProvider(project).orElse(snykDefaultInstallDir))
         extension.token.convention(SnykConventions.token.getStringValueProvider(project))

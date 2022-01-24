@@ -24,6 +24,7 @@ import org.gradle.api.provider.Property
 import org.gradle.api.provider.Provider
 import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.Internal
+import org.gradle.api.tasks.Optional
 
 trait SnykTaskSpec extends CommonArgumentSpec {
 
@@ -57,23 +58,31 @@ trait SnykTaskSpec extends CommonArgumentSpec {
         logFile.set(value)
     }
 
-    private final Property<String> executable = objects.property(String)
+    private final Property<String> executableName = objects.property(String)
 
+    /**
+     * The name of the executable for the CLI tool.
+     * This is used only if the {@code snykPath} property is not set.
+     */
     @Input
-    Property<String> getExecutable() {
-        executable
+    Property<String> getExecutableName() {
+        executableName
     }
 
-    void setExecutable(Provider<String> value) {
-        executable.set(value)
+    void setExecutableName(Provider<String> value) {
+        executableName.set(value)
     }
 
-    void setExecutable(String value) {
-        executable.set(value)
+    void setExecutableName(String value) {
+        executableName.set(value)
     }
 
     private final DirectoryProperty snykPath = objects.directoryProperty()
 
+    /**
+     * The absolute path for the CLI tool. If set,
+     * this is used over the the {@code executableName} property
+     */
     @Internal
     DirectoryProperty getSnykPath() {
         snykPath
@@ -85,6 +94,22 @@ trait SnykTaskSpec extends CommonArgumentSpec {
 
     void setSnykPath(File value) {
         snykPath.set(value)
+    }
+
+    private final Property<String> workingDirectory = objects.property(String)
+
+    /**
+     * To override the working directory when invoking the tool
+     * @return
+     */
+    @Input
+    @Optional
+    Property<String> getWorkingDirectory() {
+        workingDirectory
+    }
+
+    void setWorkingDirectory(Provider<String> value) {
+        workingDirectory.set(value)
     }
 
 }
