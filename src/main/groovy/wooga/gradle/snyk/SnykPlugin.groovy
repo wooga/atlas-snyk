@@ -54,6 +54,8 @@ class SnykPlugin implements Plugin<Project> {
         tasks.withType(SnykTask).configureEach {
             it.executable.convention(extension.executable)
             it.snykPath.convention(extension.snykPath)
+            it.token.convention(extension.token)
+            it.token.convention(extension.token)
             it.debug.convention(extension.debug)
             it.insecure.convention(extension.insecure)
             it.logFile.convention(project.layout.buildDirectory.file("logs/${it.name}.log"))
@@ -101,6 +103,7 @@ class SnykPlugin implements Plugin<Project> {
         task.skipUnresolved.convention(extension.skipUnresolved)
 
         task.yarnWorkspaces.convention(extension.yarnWorkspaces)
+        task.scanAllUnmanaged.convention(extension.scanAllUnmanaged)
     }
 
     private static mapExtensionPropertiesToMonitorTask(SnykMonitorArgumentsSpec task, SnykPluginExtension extension) {
