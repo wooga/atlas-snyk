@@ -88,7 +88,7 @@ class SnykPlugin implements Plugin<Project> {
         task.strictOutOfSync.convention(extension.strictOutOfSync)
 
         task.assetsProjectName.convention(extension.assetsProjectName)
-        task.packageFolder.convention(extension.packageFolder)
+        task.packagesFolder.convention(extension.packagesFolder)
         task.projectNamePrefix.convention(extension.projectNamePrefix)
 
         task.subProject.convention(extension.subProject)
@@ -183,6 +183,24 @@ class SnykPlugin implements Plugin<Project> {
                 [(parts[0].toString().trim()): parts[1].toString().trim()]
             } as Map<String, String>
         }))
+
+        extension.assetsProjectName.convention(SnykConventions.assetsProjectName.getBooleanValueProvider(project))
+        extension.packagesFolder.convention(SnykConventions.packagesFolder.getDirectoryValueProvider(project))
+        extension.projectNamePrefix.convention(SnykConventions.projectNamePrefix.getStringValueProvider(project))
+        extension.strictOutOfSync.convention(SnykConventions.strictOutOfSync.getBooleanValueProvider(project))
+        extension.scanAllUnmanaged.convention(SnykConventions.scanAllUnmanaged.getBooleanValueProvider(project))
+        extension.reachable.convention(SnykConventions.reachable.getBooleanValueProvider(project))
+        extension.reachableTimeout.convention(SnykConventions.reachableTimeout.getStringValueProvider(project).map({ Integer.parseInt(it) }))
+        extension.subProject.convention(SnykConventions.subProject.getStringValueProvider(project))
+        extension.allSubProjects.convention(SnykConventions.allSubProjects.getBooleanValueProvider(project))
+        extension.configurationMatching.convention(SnykConventions.configurationMatching.getStringValueProvider(project))
+        extension.configurationAttributes.convention(SnykConventions.configurationAttributes.getStringValueProvider(project).map({
+            it.trim().split(',') as List<String>
+        }))
+        extension.command.convention(SnykConventions.command.getStringValueProvider(project))
+        extension.initScript.convention(SnykConventions.initScript.getFileValueProvider(project))
+        extension.skipUnresolved.convention(SnykConventions.skipUnresolved.getBooleanValueProvider(project))
+        extension.yarnWorkspaces.convention(SnykConventions.yarnWorkspaces.getBooleanValueProvider(project))
         extension
     }
 }

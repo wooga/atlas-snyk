@@ -59,6 +59,36 @@ abstract class SnykTaskIntegrationSpec<T extends SnykTask> extends SnykIntegrati
         """.stripIndent()
     }
 
+    @Unroll("can set property #property with cli option #cliOption")
+    def "can set property via cli option"() {
+        given: "a task to read back the value"
+        def query = new PropertyQueryTaskWriter("${subjectUnderTestName}.${property}")
+        query.write(buildFile)
+
+        and: "tasks to execute"
+        def tasks = [subjectUnderTestName, cliOption]
+        if (rawValue != _) {
+            tasks.add(value)
+        }
+        tasks.add(query.taskName)
+
+        and: "disable subject under test to no fail"
+        appendToSubjectTask("enabled=false")
+
+        when:
+        def result = runTasksSuccessfully(*tasks)
+
+        then:
+        query.matches(result, expectedValue)
+
+        where:
+        property   | cliOption    | rawValue | returnValue | type
+        "insecure" | "--insecure" | _        | true        | "Boolean"
+
+        value = wrapValueBasedOnType(rawValue, type, wrapValueFallback)
+        expectedValue = returnValue == _ ? rawValue : returnValue
+    }
+
     @Unroll("can set property #property with #method and type #type")
     def "can set property SnykTask"() {
         given: "a task to read back the value"

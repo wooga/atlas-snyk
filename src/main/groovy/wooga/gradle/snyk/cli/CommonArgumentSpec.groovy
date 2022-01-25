@@ -21,12 +21,16 @@ import org.gradle.api.provider.Property
 import org.gradle.api.provider.Provider
 import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.Optional
+import org.gradle.api.tasks.options.Option
 
 trait CommonArgumentSpec extends BaseSpec {
     private final Property<Boolean> insecure = objects.property(Boolean)
 
     @Input
     @Optional
+    @Option(option = "insecure", description = """
+    Ignore unknown certificate authorities
+    """)
     Property<Boolean> getInsecure() {
         insecure
     }

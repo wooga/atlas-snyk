@@ -112,8 +112,8 @@ trait SnykTestArgumentSpec extends BaseSpec implements ContextSpecificArgumentSp
     exclude. Must be comma separated.
     Use the exclude option with --detection-depth to ignore directories at any depth.
     """)
-    void excludeOption(List<String> excludes) {
-        exclude.set(excludes.collect {
+    void excludeOption(String excludes) {
+        exclude.set(excludes.trim().split(',').collect {
             layout.getProjectDirectory().dir(it)
         })
     }

@@ -17,10 +17,9 @@
 package wooga.gradle.snyk.tasks
 
 import org.gradle.api.provider.Provider
-import wooga.gradle.snyk.cli.CommonArgumentSpec
 import wooga.gradle.snyk.cli.SnykMonitorArgumentsSpec
 
-class Monitor extends SnykTask implements SnykMonitorArgumentsSpec, CommonArgumentSpec {
+class Monitor extends SnykTask implements SnykMonitorArgumentsSpec {
 
     @Override
     Provider<List<String>> getArguments() {

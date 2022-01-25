@@ -47,25 +47,25 @@ trait DotNetArgumentSpec extends BaseSpec {
         assetsProjectName.set(value)
     }
 
-    private final DirectoryProperty packageFolder = objects.directoryProperty()
+    private final DirectoryProperty packagesFolder = objects.directoryProperty()
 
     @InputDirectory
     @Optional
-    DirectoryProperty getPackageFolder() {
-        packageFolder
+    DirectoryProperty getPackagesFolder() {
+        packagesFolder
     }
 
-    void setPackageFolder(Provider<Directory> value) {
-        packageFolder.set(value)
+    void setPackagesFolder(Provider<Directory> value) {
+        packagesFolder.set(value)
     }
 
-    void setPackageFolder(File value) {
-        packageFolder.set(value)
+    void setPackagesFolder(File value) {
+        packagesFolder.set(value)
     }
 
     @Option(option = "packages-folder", description = "Specify a custom path to the packages folder.")
-    packageFolder(String dir) {
-        packageFolder.set(layout.projectDirectory.dir(dir))
+    packagesFolder(String dir) {
+        packagesFolder.set(layout.projectDirectory.dir(dir))
     }
 
     private final Property<String> projectNamePrefix = objects.property(String)

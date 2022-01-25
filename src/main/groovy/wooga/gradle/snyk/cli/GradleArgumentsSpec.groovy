@@ -90,10 +90,6 @@ trait GradleArgumentsSpec extends BaseSpec {
 
     @Input
     @Optional
-    @Option(option = "configuration-attributes", description = """
-    Select certain values of configuration attributes to install dependencies and perform dependency
-    resolution, for example, buildtype:release,usage:java-runtime.
-    """)
     ListProperty<String> getConfigurationAttributes() {
         configurationAttributes
     }
@@ -110,12 +106,20 @@ trait GradleArgumentsSpec extends BaseSpec {
         configurationAttributes.add(attribute)
     }
 
-    void configurationAttributess(String... attributes) {
+    void configurationAttributes(String... attributes) {
         configurationAttributes.addAll(attributes)
     }
 
-    void configurationAttributess(Iterable<String> attributes) {
+    void configurationAttributes(Iterable<String> attributes) {
         configurationAttributes.addAll(attributes)
+    }
+
+    @Option(option = "configuration-attributes", description = """
+    Select certain values of configuration attributes to install dependencies and perform dependency
+    resolution, for example, buildtype:release,usage:java-runtime.
+    """)
+    void configurationAttributesOption(String attributes) {
+        configurationAttributes(attributes.trim().split(","))
     }
 
     private final Property<Boolean> reachable = objects.property(Boolean)
@@ -176,10 +180,10 @@ trait GradleArgumentsSpec extends BaseSpec {
         initScript.set(value)
     }
 
-    @Option(option = "init-script", description = """
+    @Option(option = "gradle-init-script", description = """
     Use for projects that contain a Gradle initialization script.
     """)
-    void initScript(String value) {
+    void initScriptOption(String value) {
         initScript.set(layout.projectDirectory.file(value))
     }
 }

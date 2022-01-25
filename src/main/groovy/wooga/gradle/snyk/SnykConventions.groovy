@@ -205,4 +205,95 @@ class SnykConventions {
             "snyk.projectTags",
             null
     )
+
+    static final PropertyLookup assetsProjectName = new PropertyLookup(
+            "SNYK_ASSETS_PROJECT_NAME",
+            "snyk.assetsProjectName",
+            null
+    )
+
+    static final PropertyLookup packagesFolder = new PropertyLookup(
+            "SNYK_PACKAGES_FOLDER",
+            "snyk.packagesFolder",
+            null
+    )
+
+    static final PropertyLookup projectNamePrefix = new PropertyLookup(
+            "SNYK_PROJECT_NAME_PREFIX",
+            "snyk.projectNamePrefix",
+            null
+    )
+
+    static final PropertyLookup strictOutOfSync = new PropertyLookup(
+            "SNYK_STRICT_OUT_OF_SYNC",
+            "snyk.strictOutOfSync",
+            null
+    )
+
+    static final PropertyLookup scanAllUnmanaged = new PropertyLookup(
+            "SNYK_SCAN_ALL_UNMANAGED",
+            "snyk.scanAllUnmanaged",
+            null
+    )
+
+    static final PropertyLookup reachable = new PropertyLookup(
+            "SNYK_REACHABLE",
+            "snyk.reachable",
+            null
+    )
+
+    static final PropertyLookup reachableTimeout = new PropertyLookup(
+            "SNYK_REACHABLE_TIMEOUT",
+            "snyk.reachableTimeout",
+            null
+    )
+
+    static final PropertyLookup subProject = new PropertyLookup(
+            "SNYK_SUB_PROJECT",
+            "snyk.subProject",
+            null
+    )
+
+    static final PropertyLookup allSubProjects = new PropertyLookup(
+            "SNYK_ALL_SUB_PROJECTS",
+            "snyk.allSubProjects",
+            null
+    )
+
+    static final PropertyLookup configurationMatching = new PropertyLookup(
+            "SNYK_CONFIGURATION_MATCHING",
+            "snyk.configurationMatching",
+            null
+    )
+
+    static final PropertyLookup configurationAttributes = new PropertyLookup(
+            "SNYK_CONFIGURATION_ATTRIBUTES",
+            "snyk.configurationAttributes",
+            null
+    )
+
+    static final PropertyLookup command = new PropertyLookup(
+            "SNYK_COMMAND",
+            "snyk.command",
+            null
+    )
+
+    static final PropertyLookup initScript = new PropertyLookup(
+            "SNYK_INIT_SCRIPT",
+            "snyk.initScript",
+            null
+    )
+
+    static final PropertyLookup skipUnresolved = new PropertyLookup(
+            "SNYK_SKIP_UNRESOLVED",
+            "snyk.skipUnresolved",
+            null
+    )
+
+    static final PropertyLookup yarnWorkspaces = new PropertyLookup(
+            "SNYK_YARN_WORKSPACES",
+            "snyk.yarnWorkspaces",
+            null
+    )
+
 }

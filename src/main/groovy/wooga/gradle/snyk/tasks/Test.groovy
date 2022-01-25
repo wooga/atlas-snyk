@@ -17,10 +17,9 @@
 package wooga.gradle.snyk.tasks
 
 import org.gradle.api.provider.Provider
-import wooga.gradle.snyk.cli.CommonArgumentSpec
 import wooga.gradle.snyk.cli.SnykTestArgumentSpec
 
-class Test extends SnykTask implements SnykTestArgumentSpec, CommonArgumentSpec {
+class Test extends SnykTask implements SnykTestArgumentSpec {
     @Override
     Provider<List<String>> getArguments() {
         return null

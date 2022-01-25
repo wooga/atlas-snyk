@@ -25,6 +25,41 @@ import static wooga.gradle.snyk.cli.SnykCLIOptions.*
 
 class MonitorIntegrationSpec extends SnykCheckBaseIntegrationSpec<Monitor> {
 
+    @Unroll("can set property #property with cli option #cliOption")
+    def "can set property via cli option"() {
+        given: "a task to read back the value"
+        def query = new PropertyQueryTaskWriter("${subjectUnderTestName}.${property}")
+        query.write(buildFile)
+
+        and: "tasks to execute"
+        def tasks = [subjectUnderTestName, cliOption]
+        if (rawValue != _) {
+            tasks.add(value)
+        }
+        tasks.add(query.taskName)
+
+        and: "disable subject under test to no fail"
+        appendToSubjectTask("enabled=false")
+
+        when:
+        def result = runTasksSuccessfully(*tasks)
+
+        then:
+        query.matches(result, expectedValue)
+
+        where:
+        property                     | cliOption                        | rawValue                                                               | returnValue | type
+        "trustPolicies"              | "--trust-policies"               | _                                                                      | true        | "Boolean"
+        "projectEnvironment"         | "--project-environment"          | [EnvironmentOption.backend, EnvironmentOption.frontend]                | _           | "CLIList"
+        "projectLifecycle"           | "--project-lifecycle"            | [LifecycleOption.production, LifecycleOption.development]              | _           | "CLIList"
+        "projectBusinessCriticality" | "--project-business-criticality" | [BusinessCriticalityOption.critical, BusinessCriticalityOption.medium] | _           | "CLIList"
+        "projectTags"                | "--project-tags"                 | ["foo": "test", "bar": "baz"]                                          | _           | "CLIMap"
+        "projectTags"                | "--tags"                         | ["foo": "test", "bar": "baz"]                                          | _           | "CLIMap"
+
+        value = wrapValueBasedOnType(rawValue, type, wrapValueFallback)
+        expectedValue = returnValue == _ ? rawValue : returnValue
+    }
+
     @Unroll("can set property #property with #method and type #type")
     def "can set property SnykTask"() {
         given: "a task to read back the value"
@@ -77,8 +112,8 @@ class MonitorIntegrationSpec extends SnykCheckBaseIntegrationSpec<Monitor> {
         "projectTags"                | toSetter(property)      | ["foo": "test", "bar": "baz"]                             | _                                | "Provider<Map<String, String>>"
         "projectTags"                | property                | ["foo": "test", "bar": "baz"]                             | _                                | "Map<String, String>"
         "projectTags"                | property                | ["foo": "test", "bar": "baz"]                             | _                                | "Provider<Map<String, String>>"
-        "projectTags"                | property                | "foo= test, bar=baz"                                       | ["foo": "test", "bar": "baz"]    | "String"
-        "projectTags"                | "tags"                  | " foo=test,bar= baz "                                      | ["foo": "test", "bar": "baz"]    | "String"
+        "projectTags"                | property                | "foo= test, bar=baz"                                      | ["foo": "test", "bar": "baz"]    | "String"
+        "projectTags"                | "tags"                  | " foo=test,bar= baz "                                     | ["foo": "test", "bar": "baz"]    | "String"
 
         value = wrapValueBasedOnType(rawValue, type, wrapValueFallback)
         expectedValue = returnValue == _ ? rawValue : returnValue

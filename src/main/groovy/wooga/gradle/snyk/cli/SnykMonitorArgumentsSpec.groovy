@@ -53,11 +53,6 @@ trait SnykMonitorArgumentsSpec extends SnykTestArgumentSpec {
 
     @Input
     @Optional
-    @Option(option = "project-environment", description = """
-    Set the project environment to one or more values (comma-separated). To clear the project
-    environment set --project-environment=. Allowed values: frontend, backend, internal, external,
-    mobile, saas, onprem, hosted, distributed
-    """)
     ListProperty<EnvironmentOption> getProjectEnvironment() {
         projectEnvironment
     }
@@ -82,14 +77,21 @@ trait SnykMonitorArgumentsSpec extends SnykTestArgumentSpec {
         projectEnvironment.addAll(environments)
     }
 
+    @Option(option = "project-environment", description = """
+    Set the project environment to one or more values (comma-separated). To clear the project
+    environment set --project-environment=. Allowed values: frontend, backend, internal, external,
+    mobile, saas, onprem, hosted, distributed
+    """)
+    void projectEnvironmentOption(String environment) {
+        projectEnvironment(environment.trim().split(",").collect {
+            EnvironmentOption.valueOf(it)
+        })
+    }
+
     private final ListProperty<LifecycleOption> projectLifecycle = objects.listProperty(LifecycleOption)
 
     @Input
     @Optional
-    @Option(option = "project-lifecycle", description = """
-    Set the project lifecycle to one or more values (comma-separated). To clear the project lifecycle
-    set --project-lifecycle=. Allowed values: production, development, sandbox
-    """)
     ListProperty<LifecycleOption> getProjectLifecycle() {
         projectLifecycle
     }
@@ -114,15 +116,20 @@ trait SnykMonitorArgumentsSpec extends SnykTestArgumentSpec {
         projectLifecycle.addAll(lifecycles)
     }
 
+    @Option(option = "project-lifecycle", description = """
+    Set the project lifecycle to one or more values (comma-separated). To clear the project lifecycle
+    set --project-lifecycle=. Allowed values: production, development, sandbox
+    """)
+    void projectLifecycleOption(String environment) {
+        projectLifecycle(environment.trim().split(",").collect {
+            LifecycleOption.valueOf(it)
+        })
+    }
+
     private final ListProperty<BusinessCriticalityOption> projectBusinessCriticality = objects.listProperty(BusinessCriticalityOption)
 
     @Input
     @Optional
-    @Option(option = "business-criticality", description = """
-    Set the project business criticality to one or more values (comma-separated). To clear the
-    project business criticality set --project-business-criticality=. Allowed values: critical, high,
-    medium, low
-    """)
     ListProperty<BusinessCriticalityOption> getProjectBusinessCriticality() {
         projectBusinessCriticality
     }
@@ -145,6 +152,17 @@ trait SnykMonitorArgumentsSpec extends SnykTestArgumentSpec {
 
     void projectBusinessCriticality(Iterable<BusinessCriticalityOption> criticalities) {
         projectBusinessCriticality.addAll(criticalities)
+    }
+
+    @Option(option = "project-business-criticality", description = """
+    Set the project business criticality to one or more values (comma-separated). To clear the
+    project business criticality set --project-business-criticality=. Allowed values: critical, high,
+    medium, low
+    """)
+    void projectBusinessCriticalityOption(String environment) {
+        projectBusinessCriticality(environment.trim().split(",").collect {
+            BusinessCriticalityOption.valueOf(it)
+        })
     }
 
     private final MapProperty<String, String> projectTags = objects.mapProperty(String, String)

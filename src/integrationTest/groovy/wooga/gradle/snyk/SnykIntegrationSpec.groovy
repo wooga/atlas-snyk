@@ -55,6 +55,14 @@ class SnykIntegrationSpec extends IntegrationSpec {
                 return "${SeverityThresholdOption.canonicalName}.${rawValue.toString()}".toString()
             case FailOnOption.getSimpleName():
                 return "${FailOnOption.canonicalName}.${rawValue.toString()}".toString()
+            case "CLIList":
+                def list = rawValue as List
+                return list.join(",").toString()
+            case "CLIMap":
+                def map = rawValue as Map
+                return map.collect { key, value ->
+                    "${key}=${value}"
+                }.join(",").toString()
             default:
                 return rawValue.toString()
         }

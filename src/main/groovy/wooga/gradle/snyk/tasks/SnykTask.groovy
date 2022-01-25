@@ -24,10 +24,9 @@ import org.gradle.api.provider.Provider
 import org.gradle.api.tasks.OutputFile
 import org.gradle.api.tasks.TaskAction
 import wooga.gradle.snyk.SnykActionSpec
-import wooga.gradle.snyk.cli.CommonArgumentSpec
 import wooga.gradle.snyk.cli.SnykTaskSpec
 
-abstract class SnykTask extends DefaultTask implements SnykActionSpec, SnykTaskSpec, CommonArgumentSpec {
+abstract class SnykTask extends DefaultTask implements SnykActionSpec, SnykTaskSpec  {
 
     private final RegularFileProperty logFile = project.objects.fileProperty()
 
