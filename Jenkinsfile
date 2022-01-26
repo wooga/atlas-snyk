@@ -17,13 +17,6 @@
 @Library('github.com/wooga/atlas-jenkins-pipeline@1.x') _
 
 withCredentials([string(credentialsId: 'atlas_plugins_sonar_token', variable: 'sonar_token')]) {
-
-    def testEnvironment = [
-                            "artifactoryCredentials=${artifactory_publish}",
-                            "nugetkey=${artifactory_deploy}"
-                          ]
-
     buildGradlePlugin platforms: ['macos','windows','linux'],
-                      sonarToken: sonar_token,
-                      testEnvironment: testEnvironment
+                      sonarToken: sonar_token
 }
