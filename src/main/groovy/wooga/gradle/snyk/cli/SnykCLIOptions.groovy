@@ -16,30 +16,26 @@
 
 package wooga.gradle.snyk.cli
 
-class SnykCLIOptions {
-    enum EnvironmentOption {
-        frontend, backend, internal, external, mobile, saas, onprem, hosted, distributed
-    }
+enum EnvironmentOption {
+    frontend, backend, internal, external, mobile, saas, onprem, hosted, distributed
+}
 
-    enum LifecycleOption {
-        production, development, sandbox
+enum LifecycleOption {
+    production, development, sandbox
+}
 
-    }
+enum VulnerablePathsOption {
+    none, some, all
+}
 
-    enum VulnerablePathsOption {
-        none, some, all
-    }
+enum BusinessCriticalityOption {
+    critical, high, medium, low
+}
 
-    enum BusinessCriticalityOption {
-        critical, high, medium, low
-    }
+enum SeverityThresholdOption {
+    low, medium, high, critical
+}
 
-    enum SeverityThresholdOption {
-        low, medium, high, critical
-    }
-
-    enum FailOnOption {
-        all, upgradable, patchable
-    }
-
+enum FailOnOption {
+    all, upgradable, patchable
 }

@@ -24,7 +24,7 @@ import org.gradle.api.tasks.Optional
 import org.gradle.api.tasks.options.Option
 
 trait GoArgumentSpec extends BaseSpec {
-    private final Property<SnykCLIOptions.FailOnOption> failOn = objects.property(SnykCLIOptions.FailOnOption)
+    private final Property<FailOnOption> failOn = objects.property(FailOnOption)
 
     @Input
     @Optional
@@ -35,15 +35,15 @@ trait GoArgumentSpec extends BaseSpec {
     -  patchable: fail when there is at least one vulnerability that can be patched.
     If vulnerabilities do not have a fix and this option is being used, tests pass.
     """)
-    Property<SnykCLIOptions.FailOnOption> getFailOn() {
+    Property<FailOnOption> getFailOn() {
         failOn
     }
 
-    void setFailOn(Provider<SnykCLIOptions.FailOnOption> value) {
+    void setFailOn(Provider<FailOnOption> value) {
         failOn.set(value)
     }
 
-    void setFailOn(SnykCLIOptions.FailOnOption value) {
+    void setFailOn(FailOnOption value) {
         failOn.set(value)
     }
 

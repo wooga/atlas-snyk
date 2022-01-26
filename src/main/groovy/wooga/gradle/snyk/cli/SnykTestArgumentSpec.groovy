@@ -29,8 +29,6 @@ import org.gradle.api.tasks.Optional
 import org.gradle.api.tasks.OutputFile
 import org.gradle.api.tasks.options.Option
 
-import static wooga.gradle.snyk.cli.SnykCLIOptions.*
-
 trait SnykTestArgumentSpec extends BaseSpec implements ContextSpecificArgumentSpec {
 
     private final Property<Boolean> allProjects = objects.property(Boolean)

@@ -21,14 +21,18 @@ import org.gradle.api.Project
 import org.gradle.api.logging.LogLevel
 import org.gradle.api.logging.Logging
 import org.slf4j.Logger
+import wooga.gradle.snyk.cli.BusinessCriticalityOption
+import wooga.gradle.snyk.cli.EnvironmentOption
+import wooga.gradle.snyk.cli.FailOnOption
+import wooga.gradle.snyk.cli.LifecycleOption
+import wooga.gradle.snyk.cli.SeverityThresholdOption
 import wooga.gradle.snyk.cli.SnykMonitorArgumentsSpec
 import wooga.gradle.snyk.cli.SnykTestArgumentSpec
+import wooga.gradle.snyk.cli.VulnerablePathsOption
 import wooga.gradle.snyk.internal.DefaultSnykPluginExtension
 import wooga.gradle.snyk.tasks.Monitor
 import wooga.gradle.snyk.tasks.SnykTask
 import wooga.gradle.snyk.tasks.Test
-
-import static wooga.gradle.snyk.cli.SnykCLIOptions.*
 
 class SnykPlugin implements Plugin<Project> {
 

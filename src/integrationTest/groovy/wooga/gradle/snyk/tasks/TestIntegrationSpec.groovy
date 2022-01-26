@@ -16,12 +16,5 @@
 
 package wooga.gradle.snyk.tasks
 
-
-import spock.lang.Unroll
-
 class TestIntegrationSpec extends SnykCheckBaseIntegrationSpec<Test> {
-
-
-
-
 }

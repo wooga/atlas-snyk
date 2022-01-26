@@ -17,11 +17,13 @@
 package wooga.gradle.snyk.tasks
 
 import org.gradle.api.provider.Provider
+import org.gradle.api.tasks.Input
 import wooga.gradle.snyk.cli.SnykTestArgumentSpec
 
 class Test extends SnykTask implements SnykTestArgumentSpec {
     @Override
+    @Input
     Provider<List<String>> getArguments() {
-        return null
+        project.provider({ [] as List<String> })
     }
 }

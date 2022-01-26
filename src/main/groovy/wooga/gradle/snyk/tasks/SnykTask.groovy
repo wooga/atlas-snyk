@@ -16,11 +16,15 @@
 
 package wooga.gradle.snyk.tasks
 
+
 import org.gradle.api.DefaultTask
 import org.gradle.api.file.RegularFile
 import org.gradle.api.file.RegularFileProperty
 import org.gradle.api.provider.ListProperty
 import org.gradle.api.provider.Provider
+import org.gradle.api.provider.ProviderFactory
+import org.gradle.api.tasks.Input
+import org.gradle.api.tasks.Internal
 import org.gradle.api.tasks.OutputFile
 import org.gradle.api.tasks.TaskAction
 import wooga.gradle.snyk.SnykActionSpec
@@ -73,5 +77,17 @@ abstract class SnykTask extends DefaultTask implements SnykActionSpec, SnykTaskS
     @TaskAction
     protected void exec() {
         def arguments = arguments.get()
+    }
+
+    @Override
+    @Internal
+    ProviderFactory getProviderFactory() {
+        return super.getProviderFactory()
+    }
+
+    @Input
+    @Override
+    Provider<List<String>> getArguments() {
+        project.provider({ [] as List<String> })
     }
 }

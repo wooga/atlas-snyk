@@ -25,8 +25,6 @@ import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.Optional
 import org.gradle.api.tasks.options.Option
 
-import static wooga.gradle.snyk.cli.SnykCLIOptions.*
-
 trait SnykMonitorArgumentsSpec extends SnykTestArgumentSpec {
 
     private final Property<Boolean> trustPolicies = objects.property(Boolean)

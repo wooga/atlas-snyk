@@ -105,36 +105,36 @@ abstract class SnykTaskIntegrationSpec<T extends SnykTask> extends SnykIntegrati
         query.matches(result, expectedValue)
 
         where:
-        property     | method                  | rawValue             | returnValue | type
-        "token"      | toProviderSet(property) | "some_token"         | _           | "String"
-        "token"      | toProviderSet(property) | "some_token"         | _           | "Provider<String>"
-        "token"      | toSetter(property)      | "some_token"         | _           | "String"
-        "token"      | toSetter(property)      | "some_token"         | _           | "Provider<String>"
+        property     | method                  | rawValue                     | returnValue | type
+        "token"      | toProviderSet(property) | "some_token"                 | _           | "String"
+        "token"      | toProviderSet(property) | "some_token"                 | _           | "Provider<String>"
+        "token"      | toSetter(property)      | "some_token"                 | _           | "String"
+        "token"      | toSetter(property)      | "some_token"                 | _           | "Provider<String>"
 
-        "logFile"    | toProviderSet(property) | "/path/to/logFile"   | _           | "File"
-        "logFile"    | toProviderSet(property) | "/path/to/logFile"   | _           | "Provider<RegularFile>"
-        "logFile"    | toSetter(property)      | "/path/to/logFile"   | _           | "File"
-        "logFile"    | toSetter(property)      | "/path/to/logFile"   | _           | "Provider<RegularFile>"
+        "logFile"    | toProviderSet(property) | osPath("/path/to/logFile")   | _           | "File"
+        "logFile"    | toProviderSet(property) | osPath("/path/to/logFile")   | _           | "Provider<RegularFile>"
+        "logFile"    | toSetter(property)      | osPath("/path/to/logFile")   | _           | "File"
+        "logFile"    | toSetter(property)      | osPath("/path/to/logFile")   | _           | "Provider<RegularFile>"
 
-        "executable" | toProviderSet(property) | "snyk1"              | _           | "String"
-        "executable" | toProviderSet(property) | "snyk2"              | _           | "Provider<String>"
-        "executable" | toSetter(property)      | "snyk3"              | _           | "String"
-        "executable" | toSetter(property)      | "snyk4"              | _           | "Provider<String>"
+        "executable" | toProviderSet(property) | "snyk1"                      | _           | "String"
+        "executable" | toProviderSet(property) | "snyk2"                      | _           | "Provider<String>"
+        "executable" | toSetter(property)      | "snyk3"                      | _           | "String"
+        "executable" | toSetter(property)      | "snyk4"                      | _           | "Provider<String>"
 
-        "snykPath"   | toProviderSet(property) | "/path/to/snyk_home" | _           | "File"
-        "snykPath"   | toProviderSet(property) | "/path/to/snyk_home" | _           | "Provider<Directory>"
-        "snykPath"   | toSetter(property)      | "/path/to/snyk_home" | _           | "File"
-        "snykPath"   | toSetter(property)      | "/path/to/snyk_home" | _           | "Provider<Directory>"
+        "snykPath"   | toProviderSet(property) | osPath("/path/to/snyk_home") | _           | "File"
+        "snykPath"   | toProviderSet(property) | osPath("/path/to/snyk_home") | _           | "Provider<Directory>"
+        "snykPath"   | toSetter(property)      | osPath("/path/to/snyk_home") | _           | "File"
+        "snykPath"   | toSetter(property)      | osPath("/path/to/snyk_home") | _           | "Provider<Directory>"
 
-        "insecure"   | toProviderSet(property) | true                 | _           | "Boolean"
-        "insecure"   | toProviderSet(property) | false                | _           | "Provider<Boolean>"
-        "insecure"   | toSetter(property)      | true                 | _           | "Boolean"
-        "insecure"   | toSetter(property)      | false                | _           | "Provider<Boolean>"
+        "insecure"   | toProviderSet(property) | true                         | _           | "Boolean"
+        "insecure"   | toProviderSet(property) | false                        | _           | "Provider<Boolean>"
+        "insecure"   | toSetter(property)      | true                         | _           | "Boolean"
+        "insecure"   | toSetter(property)      | false                        | _           | "Provider<Boolean>"
 
-        "debug"      | toProviderSet(property) | true                 | _           | "Boolean"
-        "debug"      | toProviderSet(property) | false                | _           | "Provider<Boolean>"
-        "debug"      | toSetter(property)      | true                 | _           | "Boolean"
-        "debug"      | toSetter(property)      | false                | _           | "Provider<Boolean>"
+        "debug"      | toProviderSet(property) | true                         | _           | "Boolean"
+        "debug"      | toProviderSet(property) | false                        | _           | "Provider<Boolean>"
+        "debug"      | toSetter(property)      | true                         | _           | "Boolean"
+        "debug"      | toSetter(property)      | false                        | _           | "Provider<Boolean>"
         value = wrapValueBasedOnType(rawValue, type, wrapValueFallback)
         expectedValue = returnValue == _ ? rawValue : returnValue
     }

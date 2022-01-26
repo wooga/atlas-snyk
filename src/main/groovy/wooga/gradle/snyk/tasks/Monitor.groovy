@@ -17,12 +17,14 @@
 package wooga.gradle.snyk.tasks
 
 import org.gradle.api.provider.Provider
+import org.gradle.api.tasks.Input
 import wooga.gradle.snyk.cli.SnykMonitorArgumentsSpec
 
 class Monitor extends SnykTask implements SnykMonitorArgumentsSpec {
 
+    @Input
     @Override
     Provider<List<String>> getArguments() {
-        return null
+        project.provider({ [] as List<String> })
     }
 }

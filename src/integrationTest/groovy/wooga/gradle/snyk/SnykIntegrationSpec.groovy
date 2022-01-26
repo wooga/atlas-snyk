@@ -17,9 +17,7 @@
 package wooga.gradle.snyk
 
 import com.wooga.gradle.test.IntegrationSpec
-
-import static wooga.gradle.snyk.cli.SnykCLIOptions.*
-
+import wooga.gradle.snyk.cli.*
 
 class SnykIntegrationSpec extends IntegrationSpec {
 

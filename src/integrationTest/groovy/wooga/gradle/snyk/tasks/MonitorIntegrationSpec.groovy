@@ -18,10 +18,12 @@ package wooga.gradle.snyk.tasks
 
 import com.wooga.gradle.test.PropertyQueryTaskWriter
 import spock.lang.Unroll
+import wooga.gradle.snyk.cli.BusinessCriticalityOption
+import wooga.gradle.snyk.cli.EnvironmentOption
+import wooga.gradle.snyk.cli.LifecycleOption
 
 import static com.wooga.gradle.test.PropertyUtils.toProviderSet
 import static com.wooga.gradle.test.PropertyUtils.toSetter
-import static wooga.gradle.snyk.cli.SnykCLIOptions.*
 
 class MonitorIntegrationSpec extends SnykCheckBaseIntegrationSpec<Monitor> {
 
