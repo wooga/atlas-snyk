@@ -14,8 +14,17 @@
  * limitations under the License.
  */
 
-package wooga.gradle.snyk
+package wooga.gradle.snyk.tasks
 
-class SnykConsts {
+import org.gradle.api.provider.Provider
+import org.gradle.api.tasks.Input
+import wooga.gradle.snyk.cli.SnykMonitorArgumentsSpec
 
+class Monitor extends SnykTask implements SnykMonitorArgumentsSpec {
+
+    @Input
+    @Override
+    Provider<List<String>> getArguments() {
+        project.provider({ [] as List<String> })
+    }
 }

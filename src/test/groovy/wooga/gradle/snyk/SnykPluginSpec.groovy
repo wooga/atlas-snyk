@@ -18,29 +18,27 @@ package wooga.gradle.snyk
 
 import nebula.test.ProjectSpec
 import spock.lang.Unroll
-import wooga.gradle.snyk.tasks.Snyk
 
 class SnykPluginSpec extends ProjectSpec {
 
     public static final String PLUGIN_NAME = 'net.wooga.snyk'
 
-    @Unroll("creates the task #taskName")
-    def 'Creates needed tasks'(String taskName, Class taskType) {
-        given:
-        assert !project.plugins.hasPlugin(PLUGIN_NAME)
-        assert !project.tasks.findByName(taskName)
-
-        when:
-        project.plugins.apply(PLUGIN_NAME)
-
-        then:
-        def task = project.tasks.findByName(taskName)
-        taskType.isInstance(task)
-
-        where:
-        taskName  | taskType
-        "example" | Snyk
-    }
+//    @Unroll("creates the task #taskName")
+//    def 'Creates needed tasks'(String taskName, Class taskType) {
+//        given:
+//        assert !project.plugins.hasPlugin(PLUGIN_NAME)
+//        assert !project.tasks.findByName(taskName)
+//
+//        when:
+//        project.plugins.apply(PLUGIN_NAME)
+//
+//        then:
+//        def task = project.tasks.findByName(taskName)
+//        taskType.isInstance(task)
+//
+//        where:
+//        taskName | taskType
+//    }
 
 
     @Unroll
@@ -57,8 +55,8 @@ class SnykPluginSpec extends ProjectSpec {
         extensionType.isInstance extension
 
         where:
-        extensionName     | extensionType
-        'snyk' | SnykPluginExtension
+        extensionName | extensionType
+        'snyk'        | SnykPluginExtension
     }
 
 }

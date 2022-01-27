@@ -16,14 +16,14 @@
 
 package wooga.gradle.snyk.tasks
 
-import org.gradle.api.DefaultTask
-import org.gradle.api.tasks.TaskAction
+import org.gradle.api.provider.Provider
+import org.gradle.api.tasks.Input
+import wooga.gradle.snyk.cli.SnykTestArgumentSpec
 
-class Snyk extends DefaultTask {
-
-    @TaskAction
-    protected void action() {
-        logger.info('execute')
+class Test extends SnykTask implements SnykTestArgumentSpec {
+    @Override
+    @Input
+    Provider<List<String>> getArguments() {
+        project.provider({ [] as List<String> })
     }
-
 }

@@ -14,22 +14,20 @@
  * limitations under the License.
  */
 
-package wooga.gradle.snyk.tasks
+package wooga.gradle.snyk
 
-import wooga.gradle.snyk.IntegrationSpec
-import wooga.gradle.snyk.SnykPlugin
 
-class SnykIntegrationSpec extends IntegrationSpec {
+import org.gradle.api.provider.Provider
 
-    def setup() {
-        buildFile << """
-            ${applyPlugin(SnykPlugin)}
-        """.stripIndent()
-    }
+interface SnykActionSpec {
+    Provider<List<String>> getArguments()
 
-    def "can run task successfully"() {
-        expect:
-        runTasksSuccessfully("example")
-    }
+    void setAdditionalArguments(Iterable<String> value)
+    void setAdditionalArguments(Provider<? extends Iterable<String>> value)
+
+    void argument(String argument)
+    void arguments(String... arguments)
+    void arguments(Iterable<String> arguments)
+
 
 }
