@@ -16,6 +16,7 @@ class SnykInstall extends DefaultTask {
 
     private static final String SNYK_RELEASE_JSON_URL = "https://static.snyk.io/cli/%s/release.json"
     private final Property<File> installationDir
+    private final Property<String> executableName
     private final Property<String> snykVersion
 
     private final Downlader downloader
@@ -23,6 +24,7 @@ class SnykInstall extends DefaultTask {
 
     SnykInstall() {
         this.installationDir = project.objects.property(File)
+        this.executableName = project.objects.property(String)
         this.snykVersion = project.objects.property(String)
         this.snykExecProperty = project.objects.property(File)
 
@@ -30,22 +32,28 @@ class SnykInstall extends DefaultTask {
     }
 
     @TaskAction
-    public void run() {
+    void run() {
         String snykVersion = this.snykVersion.get()
+        Optional<String> executableName = Optional.ofNullable(this.executableName.getOrNull())
         File installationDir = this.installationDir.get()
-        def snykReleases = fetchSnykReleases(snykVersion)
+
         File finalInstallationDir = new File(installationDir, snykVersion)
-        File snykExecutable = downloadRelease(finalInstallationDir, snykReleases)
+        File snykExecutable = downloadRelease(finalInstallationDir, executableName, snykVersion)
         this.snykExecProperty.set(snykExecutable)
     }
 
-    private File downloadRelease(File installationDir, Map<String, SnykDownloadAsset> snykReleases) {
+    private File downloadRelease(File installationDir, Optional<String> executableName, String snykVersion) {
+        def snykReleases = fetchSnykReleases(snykVersion)
         if(PlatformUtils.isWindows()) {
-            return snykReleases."snyk-win.exe".download(installationDir, downloader)
+            def winExecutableName = executableName.map{it.endsWith(".exe")? it : "${it}.exe"}
+            def executableFile = new File(installationDir, winExecutableName.orElse("snyk-win.exe"))
+            return snykReleases."snyk-win.exe".download(executableFile, downloader)
         } else if(PlatformUtils.isMac()) {
-            return snykReleases."snyk-macos".download(installationDir, downloader)
+            def executableFile = new File(installationDir, executableName.orElse("snyk-macos"))
+            return snykReleases."snyk-macos".download(executableFile, downloader)
         } else if(PlatformUtils.isLinux()) {
-            return snykReleases."snyk-linux".download(installationDir, downloader)
+            def executableFile = new File(installationDir, executableName.orElse("snyk-linux"))
+            return snykReleases."snyk-linux".download(executableFile, downloader)
         }
         throw new UnsupportedOperationException("Current OS do not have an available snyk binary for download")
     }
@@ -66,6 +74,11 @@ class SnykInstall extends DefaultTask {
     @Input
     Property<File> getInstallationDir() {
         return installationDir
+    }
+
+    @Input @org.gradle.api.tasks.Optional
+    Property<String> getExecutableName() {
+        return executableName
     }
 
     @Input

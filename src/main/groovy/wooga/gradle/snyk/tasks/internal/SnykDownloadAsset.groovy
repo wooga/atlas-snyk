@@ -13,10 +13,9 @@ class SnykDownloadAsset {
         this.sha256 = sha256.trim().split(" ")[0]
     }
 
-    public File download(File installationDir, Downlader downloader) {
-        installationDir.mkdirs()
-        File fullPath = new File(installationDir, name)
-        File snykExecutable = downloader.download(fullPath, url, sha256)
+    File download(File executableFile, Downlader downloader) {
+        executableFile.mkdirs()
+        File snykExecutable = downloader.download(executableFile, url, sha256)
         snykExecutable.setExecutable(true, false)
         return snykExecutable
     }
