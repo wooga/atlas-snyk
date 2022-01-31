@@ -56,7 +56,6 @@ class SnykPlugin implements Plugin<Project> {
             mapExtensionPropertiesToMonitorTask(it, extension)
         }
 
-
         tasks.withType(SnykInstall).configureEach {installTask ->
             installTask.installationDir.convention(extension.snykPath)
             installTask.executableName.convention(extension.executable)
@@ -68,7 +67,6 @@ class SnykPlugin implements Plugin<Project> {
             dependsOn(snykInstall)
             it.executable.convention(extension.executable)
             it.snykPath.convention(extension.snykPath)
-            it.snykVersion.convention(extension.snykVersion)
             it.token.convention(extension.token)
             it.token.convention(extension.token)
             it.debug.convention(extension.debug)
@@ -130,10 +128,11 @@ class SnykPlugin implements Plugin<Project> {
     }
 
     protected static SnykPluginExtension createAndConfigureExtension(Project project) {
-
-        def snykDefaultInstallDir= project.layout.dir(project.provider {new File(project.gradle.gradleUserHomeDir, "atlas-snyk")})
-
         def extension = project.extensions.create(SnykPluginExtension, EXTENSION_NAME, DefaultSnykPluginExtension, project)
+        def snykDefaultInstallDir= project.layout.dir(extension.snykVersion.map {version ->
+            new File(project.gradle.gradleUserHomeDir, "atlas-snyk/${version}")
+        })
+
         extension.executable.convention(SnykConventions.executable.getStringValueProvider(project))
         extension.snykVersion.convention(SnykConventions.snykVersion.getStringValueProvider(project))
         extension.snykPath.convention(SnykConventions.snykPath.getDirectoryValueProvider(project).orElse(snykDefaultInstallDir))

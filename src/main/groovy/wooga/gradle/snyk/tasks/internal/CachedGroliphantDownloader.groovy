@@ -17,24 +17,24 @@ class CachedGroliphantDownloader implements Downlader {
 
     @Override
     File download(File dest, URL source, String sha256 = null) {
-        if (!dest.file) {
-            forceDownload(dest, source, sha256)
-        } else {
-            if(!checksum(dest, sha256)) {
+        if (dest.file) {
+            if (!checksum(dest, sha256)) {
                 forceDownload(dest, source, sha256)
             }
+        } else {
+            forceDownload(dest, source, sha256)
         }
         return dest
     }
 
     void forceDownload(File dest, URL source, String sha256) {
         IDownload downloader = this.downloaderFactory(dest.name)
-        if(dest.exists()) {
+        if (dest.exists()) {
             dest.delete()
         }
         dest.createNewFile()
         downloader.download(source.toURI(), dest)
-        if(!checksum(dest, sha256)) {
+        if (!checksum(dest, sha256)) {
             throw new Exception("Error while matching checksums\nexpected: ${sha256} \nactual: ${DigestUtils.sha256Hex(dest.bytes)}")
         }
     }

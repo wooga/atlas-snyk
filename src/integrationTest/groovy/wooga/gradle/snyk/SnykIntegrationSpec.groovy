@@ -19,6 +19,8 @@ package wooga.gradle.snyk
 import com.wooga.gradle.test.IntegrationSpec
 import wooga.gradle.snyk.cli.*
 
+import static com.wooga.gradle.PlatformUtils.getUnixUserHomePath
+
 class SnykIntegrationSpec extends IntegrationSpec {
 
     static final String extensionName = SnykPlugin.EXTENSION_NAME
@@ -64,5 +66,13 @@ class SnykIntegrationSpec extends IntegrationSpec {
             default:
                 return rawValue.toString()
         }
+    }
+
+    static File getGradleUserHome() {
+        def gradleUserHomeEnv = System.getenv("GRADLE_USER_HOME")
+        if (!gradleUserHomeEnv) {
+            gradleUserHomeEnv = "${getUnixUserHomePath()}/.gradle"
+        }
+        new File(gradleUserHomeEnv)
     }
 }

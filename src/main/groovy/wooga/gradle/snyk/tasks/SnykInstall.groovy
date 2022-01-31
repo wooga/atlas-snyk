@@ -2,7 +2,6 @@ package wooga.gradle.snyk.tasks
 
 import com.wooga.gradle.PlatformUtils
 import groovy.json.JsonSlurper
-import groovy.transform.Internal
 import org.gradle.api.DefaultTask
 import org.gradle.api.file.Directory
 import org.gradle.api.file.DirectoryProperty
@@ -10,6 +9,7 @@ import org.gradle.api.file.RegularFile
 import org.gradle.api.provider.Property
 import org.gradle.api.provider.Provider
 import org.gradle.api.tasks.Input
+import org.gradle.api.tasks.Internal
 import org.gradle.api.tasks.OutputFile
 import org.gradle.api.tasks.TaskAction
 import wooga.gradle.snyk.tasks.internal.Downlader
@@ -35,10 +35,7 @@ class SnykInstall extends DefaultTask {
             String version -> fetchSnykReleases(version)
         }.memoize())
 
-        def fullInstallationDir = this.installationDir.zip(this.snykVersion) {
-            installDir, version -> installDir.dir(version)
-        }
-        this.snykExecutable = fullInstallationDir.zip(executableName) {
+        this.snykExecutable = installationDir.zip(executableName) {
             dir, fileName -> dir.file(normalizeExecutableByOS(fileName))
         }
     }

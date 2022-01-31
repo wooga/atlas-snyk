@@ -16,13 +16,14 @@
 
 package wooga.gradle.snyk
 
-import com.wooga.gradle.PlatformUtils
 import com.wooga.gradle.test.ConventionSource
+import com.wooga.gradle.test.GradleSpecUtils
 import com.wooga.gradle.test.PropertyLocation
 import com.wooga.gradle.test.PropertyQueryTaskWriter
 import spock.lang.Unroll
 import wooga.gradle.snyk.cli.*
 import wooga.gradle.snyk.tasks.Monitor
+import wooga.gradle.snyk.tasks.SnykTask
 import wooga.gradle.snyk.tasks.Test
 
 import static com.wooga.gradle.PlatformUtils.getUnixUserHomePath
@@ -557,7 +558,7 @@ class SnykPluginIntegrationSpec extends SnykIntegrationSpec {
         "snykVersion"                    | toProviderSet(property) | "v2.00"                                                         | _                                                                      | "String"                                    | PropertyLocation.script
 
 
-        "snykPath"                       | _                       | _                                                               | osPath("${getUnixUserHomePath()}/.gradle/atlas-snyk")                  | "Provider<Directory>"                       | PropertyLocation.none
+        "snykPath"                       | _                       | _                                                               | osPath("${getGradleUserHome()}/atlas-snyk")                            | "Provider<Directory>"                       | PropertyLocation.none
         "snykPath"                       | _                       | osPath("/path/to/snyk")                                         | _                                                                      | _                                           | PropertyLocation.environment
         "snykPath"                       | _                       | osPath("/path/to/snyk")                                         | _                                                                      | _                                           | PropertyLocation.property
         "snykPath"                       | toSetter(property)      | osPath("/path/to/snyk")                                         | _                                                                      | "Provider<Directory>"                       | PropertyLocation.script
@@ -580,4 +581,30 @@ class SnykPluginIntegrationSpec extends SnykIntegrationSpec {
         escapedValue = (value instanceof String) ? escapedPath(value) : value
         invocation = (method != _) ? "${method}(${escapedValue})" : "${property} = ${escapedValue}"
     }
+
+    @Unroll("task #dependency runs before SnykTask")
+    def "task #dependency runs before SnykTask"() {
+        given: "a generic token in order for snykTask to run"
+        def snykTaskName = "snykTaskTest"
+        buildFile << """
+        project.tasks.register("$snykTaskName", ${SnykTask.name}) {
+            token="anytoken"
+        }
+        """
+
+        when:
+        def result = runTasks(snykTaskName)
+
+        then: "dependency task should run and run before the SnykTask"
+        def executedTasks = GradleSpecUtils.executedTasks(result.standardOutput)
+        def subjectTaskIndex = executedTasks.findIndexOf { it == ":${snykTaskName}" }
+        def dependencyIndex = executedTasks.findIndexOf { it == ":${dependency}" }
+        dependencyIndex > -1
+        subjectTaskIndex > dependencyIndex
+
+        where:
+        dependency << ["snykInstall"]
+    }
+
+
 }
