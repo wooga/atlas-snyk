@@ -16,6 +16,7 @@
 
 package wooga.gradle.snyk.tasks
 
+import com.wooga.gradle.test.GradleSpecUtils
 import com.wooga.gradle.test.PropertyQueryTaskWriter
 import spock.lang.Unroll
 import wooga.gradle.snyk.SnykIntegrationSpec
@@ -138,4 +139,24 @@ abstract class SnykTaskIntegrationSpec<T extends SnykTask> extends SnykIntegrati
         value = wrapValueBasedOnType(rawValue, type, wrapValueFallback)
         expectedValue = returnValue == _ ? rawValue : returnValue
     }
+
+    @Unroll("task #dependency runs before SnykTask")
+    def "task #dependency runs before SnykTask"() {
+        given: "a generic token in order for snykTask to run"
+        appendToSubjectTask("token=\"anytoken\"")
+
+        when:
+        def result = runTasks(subjectUnderTestName)
+
+        then: "dependency task should run and run before the SnykTask"
+        def executedTasks = GradleSpecUtils.executedTasks(result.standardOutput)
+        def subjectTaskIndex = executedTasks.findIndexOf {it == ":${subjectUnderTestName}"}
+        def dependencyIndex = executedTasks.findIndexOf {it ==  ":${dependency}"}
+        dependencyIndex > -1
+        subjectTaskIndex > dependencyIndex
+
+        where:
+        dependency << ["snykInstall"]
+    }
+
 }

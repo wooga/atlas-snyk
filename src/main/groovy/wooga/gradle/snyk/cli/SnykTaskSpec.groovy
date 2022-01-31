@@ -72,6 +72,21 @@ trait SnykTaskSpec extends CommonArgumentSpec {
         executable.set(value)
     }
 
+    private final Property<String> snykVersion = objects.property(String)
+
+    @Input
+    Property<String> getSnykVersion() {
+        snykVersion
+    }
+
+    void setSnykVersion(Provider<String> value) {
+        snykVersion.set(value)
+    }
+
+    void setSnykVersion(String value) {
+        snykVersion.set(value)
+    }
+
     private final DirectoryProperty snykPath = objects.directoryProperty()
 
     @Internal
