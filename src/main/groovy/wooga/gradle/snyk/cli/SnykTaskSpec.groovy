@@ -61,7 +61,7 @@ trait SnykTaskSpec extends CommonArgumentSpec {
     private final Property<String> executableName = objects.property(String)
 
     /**
-     * The name of the executable for the CLI tool.
+     * The name to the executable for the CLI tool.
      * This is used only if the {@code snykPath} property is not set.
      */
     @Input
@@ -80,8 +80,8 @@ trait SnykTaskSpec extends CommonArgumentSpec {
     private final DirectoryProperty snykPath = objects.directoryProperty()
 
     /**
-     * The absolute path for the CLI tool. If set,
-     * this is used over the the {@code executableName} property
+     * The path to the directory for the CLI tool. If set,
+     * This is used over the the {@code executableName} property
      */
     @Internal
     DirectoryProperty getSnykPath() {

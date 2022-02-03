@@ -386,9 +386,12 @@ abstract class SnykCheckBaseIntegrationSpec<T extends SnykTask> extends SnykTask
     def "composes correct CLI string from #setters -> #expected"() {
 
         given: "a snyk wrapper"
-        def wrapper = generateBatchWrapper("snyk-wrapper")
-        def wrapperPath = escapedPath(wrapper.path)
+        def wrapperName = "snyk-wrapper"
+        def wrapper = generateBatchWrapper(wrapperName)
+        def wrapperDir = wrapper.parent
+        def wrapperPath = escapedPath(wrapperDir)
         buildFile << """
+        ${extensionName}.executableName=${wrapValueBasedOnType(wrapperName, String)}
         ${extensionName}.snykPath=${wrapValueBasedOnType(wrapperPath, Directory)}
         """.stripIndent()
 
@@ -412,9 +415,6 @@ abstract class SnykCheckBaseIntegrationSpec<T extends SnykTask> extends SnykTask
         where:
         setters                                                                 | flags
         ["allProjects=true"]                                                    | "--all-projects"
-        ["allProjects=false"]                                                   | ""
-        ["allSubProjects=true"]                                                 | "--all-sub-projects"
-        ["allSubProjects=false"]                                                | ""
         ["allProjects=true", "allSubProjects=true"]                             | "--all-projects --all-sub-projects"
         ["projectName=${wrapValueBasedOnType("pancakes", String)}"]             | "--project-name=pancakes"
         ["detectionDepth=7"]                                                    | "--detection-depth=7"
@@ -436,7 +436,9 @@ abstract class SnykCheckBaseIntegrationSpec<T extends SnykTask> extends SnykTask
         ["severityThreshold=${wrapValueBasedOnType("critical", String)}"]       | "--severity-threshold=critical"
         ["failOn=${wrapValueBasedOnType("all", String)}"]                       | "--fail-on=all"
 
-        expected = flags.toString().empty ? optionName : "${optionName} ${flags}"
+        ["allSubProjects=true"]                                                 | "--all-sub-projects"
+
+        expected = flags.toString().empty ? commandName : "${commandName} ${flags}"
         mockFile = "foo.bar"
     }
 

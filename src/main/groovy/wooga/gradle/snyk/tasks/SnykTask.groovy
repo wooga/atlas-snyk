@@ -60,12 +60,8 @@ abstract class SnykTask extends DefaultTask
 
         def _arguments = getAllArguments()
         def _workingDir = workingDirectory.getOrNull()
-        def _executable
-        if (snykPath.isPresent()) {
-            _executable = snykPath.get().asFile.path
-        } else {
-            _executable = executableName.get()
-        }
+        def _executable =  snykPath.get().file(executableName.get())
+
 
         ExecResult execResult = project.exec(new Action<ExecSpec>() {
             @Override

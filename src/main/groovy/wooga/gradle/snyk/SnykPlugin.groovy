@@ -46,7 +46,6 @@ class SnykPlugin implements Plugin<Project> {
         def tasks = project.tasks
         def extension = createAndConfigureExtension(project)
 
-
         tasks.withType(Test).configureEach {
             mapExtensionPropertiesToTestTask(it, extension)
         }
@@ -58,7 +57,7 @@ class SnykPlugin implements Plugin<Project> {
 
         tasks.withType(SnykInstall).configureEach {installTask ->
             installTask.installationDir.convention(extension.snykPath)
-            installTask.executableName.convention(extension.executable)
+            installTask.executableName.convention(extension.executableName)
             installTask.snykVersion.convention(extension.snykVersion)
         }
         def snykInstall = tasks.register("snykInstall", SnykInstall)
@@ -73,59 +72,6 @@ class SnykPlugin implements Plugin<Project> {
             it.insecure.convention(extension.insecure)
             it.logFile.convention(project.layout.buildDirectory.file("logs/${it.name}.log"))
         }
-    }
-
-    private static mapExtensionPropertiesToTestTask(TestProjectCommandSpec task, SnykPluginExtension extension) {
-
-        task.allProjects.convention(extension.allProjects)
-        task.detectionDepth.convention(extension.detectionDepth)
-        task.exclude.convention(extension.exclude)
-        task.pruneRepeatedSubDependencies.convention(extension.pruneRepeatedSubDependencies)
-        task.printDependencies.convention(extension.printDependencies)
-        task.remoteRepoUrl.convention(extension.remoteRepoUrl)
-        task.includeDevelopmentDependencies.convention(extension.includeDevelopmentDependencies)
-        task.orgName.convention(extension.orgName)
-        task.packageFile.convention(extension.packageFile)
-        task.ignorePolicy.convention(extension.ignorePolicy)
-        task.showVulnerablePaths.convention(extension.showVulnerablePaths)
-        task.projectName.convention(extension.projectName)
-        task.targetReference.convention(extension.targetReference)
-        task.policyPath.convention(extension.policyPath)
-        task.printJson.convention(extension.printJson)
-        task.jsonOutputPath.convention(extension.jsonOutputPath)
-        task.printSarif.convention(extension.printSarif)
-        task.sarifOutputPath.convention(extension.sarifOutputPath)
-        task.severityThreshold.convention(extension.severityThreshold)
-        task.failOn.convention(extension.failOn)
-        task.compilerArguments.convention(extension.compilerArguments)
-
-        task.strictOutOfSync.convention(extension.strictOutOfSync)
-
-        task.assetsProjectName.convention(extension.assetsProjectName)
-        task.packagesFolder.convention(extension.packagesFolder)
-        task.projectNamePrefix.convention(extension.projectNamePrefix)
-
-        task.subProject.convention(extension.subProject)
-        task.allSubProjects.convention(extension.allSubProjects)
-        task.configurationMatching.convention(extension.configurationMatching)
-        task.configurationAttributes.convention(extension.configurationAttributes)
-        task.reachable.convention(extension.reachable)
-        task.reachableTimeout.convention(extension.reachableTimeout)
-        task.initScript.convention(extension.initScript)
-
-        task.command.convention(extension.command)
-        task.skipUnresolved.convention(extension.skipUnresolved)
-
-        task.yarnWorkspaces.convention(extension.yarnWorkspaces)
-        task.scanAllUnmanaged.convention(extension.scanAllUnmanaged)
-    }
-
-    private static mapExtensionPropertiesToMonitorTask(MonitorProjectCommandSpec task, SnykPluginExtension extension) {
-        task.trustPolicies.convention(extension.trustPolicies)
-        task.projectEnvironment.convention(extension.projectEnvironment)
-        task.projectLifecycle.convention(extension.projectLifecycle)
-        task.projectBusinessCriticality.convention(extension.projectBusinessCriticality)
-        task.projectTags.convention(extension.projectTags)
     }
 
     protected static SnykPluginExtension createAndConfigureExtension(Project project) {
@@ -220,5 +166,58 @@ class SnykPlugin implements Plugin<Project> {
         extension.skipUnresolved.convention(SnykConventions.skipUnresolved.getBooleanValueProvider(project))
         extension.yarnWorkspaces.convention(SnykConventions.yarnWorkspaces.getBooleanValueProvider(project))
         extension
+    }
+
+    private static mapExtensionPropertiesToTestTask(TestProjectCommandSpec task, SnykPluginExtension extension) {
+
+        task.allProjects.convention(extension.allProjects)
+        task.detectionDepth.convention(extension.detectionDepth)
+        task.exclude.convention(extension.exclude)
+        task.pruneRepeatedSubDependencies.convention(extension.pruneRepeatedSubDependencies)
+        task.printDependencies.convention(extension.printDependencies)
+        task.remoteRepoUrl.convention(extension.remoteRepoUrl)
+        task.includeDevelopmentDependencies.convention(extension.includeDevelopmentDependencies)
+        task.orgName.convention(extension.orgName)
+        task.packageFile.convention(extension.packageFile)
+        task.ignorePolicy.convention(extension.ignorePolicy)
+        task.showVulnerablePaths.convention(extension.showVulnerablePaths)
+        task.projectName.convention(extension.projectName)
+        task.targetReference.convention(extension.targetReference)
+        task.policyPath.convention(extension.policyPath)
+        task.printJson.convention(extension.printJson)
+        task.jsonOutputPath.convention(extension.jsonOutputPath)
+        task.printSarif.convention(extension.printSarif)
+        task.sarifOutputPath.convention(extension.sarifOutputPath)
+        task.severityThreshold.convention(extension.severityThreshold)
+        task.failOn.convention(extension.failOn)
+        task.compilerArguments.convention(extension.compilerArguments)
+
+        task.strictOutOfSync.convention(extension.strictOutOfSync)
+
+        task.assetsProjectName.convention(extension.assetsProjectName)
+        task.packagesFolder.convention(extension.packagesFolder)
+        task.projectNamePrefix.convention(extension.projectNamePrefix)
+
+        task.subProject.convention(extension.subProject)
+        task.allSubProjects.convention(extension.allSubProjects)
+        task.configurationMatching.convention(extension.configurationMatching)
+        task.configurationAttributes.convention(extension.configurationAttributes)
+        task.reachable.convention(extension.reachable)
+        task.reachableTimeout.convention(extension.reachableTimeout)
+        task.initScript.convention(extension.initScript)
+
+        task.command.convention(extension.command)
+        task.skipUnresolved.convention(extension.skipUnresolved)
+
+        task.yarnWorkspaces.convention(extension.yarnWorkspaces)
+        task.scanAllUnmanaged.convention(extension.scanAllUnmanaged)
+    }
+
+    private static mapExtensionPropertiesToMonitorTask(MonitorProjectCommandSpec task, SnykPluginExtension extension) {
+        task.trustPolicies.convention(extension.trustPolicies)
+        task.projectEnvironment.convention(extension.projectEnvironment)
+        task.projectLifecycle.convention(extension.projectLifecycle)
+        task.projectBusinessCriticality.convention(extension.projectBusinessCriticality)
+        task.projectTags.convention(extension.projectTags)
     }
 }
