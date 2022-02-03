@@ -24,7 +24,7 @@ import java.nio.file.Files
 class TestIntegrationSpec extends SnykCheckBaseIntegrationSpec<Test> {
 
     @Override
-    String getOptionName() {
+    String getCommandName() {
         "test"
     }
 

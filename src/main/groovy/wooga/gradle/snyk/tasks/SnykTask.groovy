@@ -64,16 +64,12 @@ abstract class SnykTask extends DefaultTask
         if (snykPath.isPresent()) {
             _executable = snykPath.get().asFile.path
         } else {
-            logger.warn("No path for the snyk executable was set; will invoke ${executableName.get()} in the default path ")
             _executable = executableName.get()
         }
 
         ExecResult execResult = project.exec(new Action<ExecSpec>() {
             @Override
             void execute(ExecSpec exec) {
-
-                logger.info("Invoking snyk executable (${_executable}) with ${_arguments}")
-
                 exec.with {
                     executable _executable
                     args = _arguments

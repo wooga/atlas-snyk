@@ -34,7 +34,7 @@ import static com.wooga.gradle.test.PropertyUtils.toSetter
 
 abstract class SnykCheckBaseIntegrationSpec<T extends SnykTask> extends SnykTaskIntegrationSpec<T> {
 
-    abstract String getOptionName()
+    abstract String getCommandName()
 
     @Unroll("can set property #property with cli option #cliOption")
     def "can set property via cli option"() {

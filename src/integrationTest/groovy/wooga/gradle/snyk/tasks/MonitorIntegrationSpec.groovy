@@ -30,7 +30,7 @@ import static com.wooga.gradle.test.PropertyUtils.toSetter
 class MonitorIntegrationSpec extends SnykCheckBaseIntegrationSpec<Monitor> {
 
     @Override
-    String getOptionName() {
+    String getCommandName() {
         "monitor"
     }
 
