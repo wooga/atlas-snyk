@@ -18,9 +18,7 @@ package wooga.gradle.snyk.tasks
 
 import com.wooga.gradle.PlatformUtils
 import com.wooga.gradle.test.PropertyQueryTaskWriter
-import org.apache.tools.ant.util.FileUtils
 import org.gradle.api.file.Directory
-import org.gradle.api.file.RegularFile
 import spock.lang.Unroll
 import wooga.gradle.snyk.cli.FailOnOption
 import wooga.gradle.snyk.cli.SeverityThresholdOption
@@ -415,15 +413,14 @@ abstract class SnykCheckBaseIntegrationSpec<T extends SnykTask> extends SnykTask
         where:
         setters                                                                 | flags
         ["allProjects=true"]                                                    | "--all-projects"
-        ["allProjects=true", "allSubProjects=true"]                             | "--all-projects --all-sub-projects"
-        ["projectName=${wrapValueBasedOnType("pancakes", String)}"]             | "--project-name=pancakes"
+        ["projectName=${wrap("pancakes")}"]                                     | "--project-name=pancakes"
         ["detectionDepth=7"]                                                    | "--detection-depth=7"
-        ["exclude=[file(${wrapValueBasedOnType("foo.bar", String)})]"]          | "--exclude=${new File("#projectDir#/foo.bar").path}"
+        ["exclude=[file(${wrap("foo.bar")})]"]                                  | "--exclude=${new File("#projectDir#/foo.bar").path}"
         ["pruneRepeatedSubDependencies=true"]                                   | "--prune-repeated-subdependencies"
         ["printDependencies=true"]                                              | "--print-deps"
-        ["remoteRepoUrl=${wrapValueBasedOnType("foo.bar/pancakes", String)}"]   | "--remote-repo-url"
+        ["remoteRepoUrl=${wrap("foo.bar/pancakes")}"]                           | "--remote-repo-url"
         ["includeDevelopmentDependencies=true"]                                 | "--dev"
-        ["orgName=${wrapValueBasedOnType("PANCAKES", String)}"]                 | "--org=PANCAKES"
+        ["orgName=${wrap("PANCAKES")}"]                                         | "--org=PANCAKES"
         ["packageFile = ${wrapValueBasedOnType("#projectDir#/foo.bar", File)}"] | "--file=${new File("#projectDir#/foo.bar").path}"
         ["ignorePolicy=true"]                                                   | "--ignore-policy"
         ["showVulnerablePaths=${wrapValueBasedOnType("all", String)}"]          | "--show-vulnerable-paths=all"
@@ -433,10 +430,23 @@ abstract class SnykCheckBaseIntegrationSpec<T extends SnykTask> extends SnykTask
         ["jsonOutputPath=file(${wrapValueBasedOnType("foo.bar", String)})"]     | "--json-file-output=${new File("#projectDir#/foo.bar").path}"
         ["printSarif=true"]                                                     | "--sarif"
         ["sarifOutputPath=file(${wrapValueBasedOnType("foo.bar", String)})"]    | "--sarif-file-output=${new File("#projectDir#/foo.bar").path}"
-        ["severityThreshold=${wrapValueBasedOnType("critical", String)}"]       | "--severity-threshold=critical"
-        ["failOn=${wrapValueBasedOnType("all", String)}"]                       | "--fail-on=all"
+        ["severityThreshold=${wrap("critical")}"]                               | "--severity-threshold=critical"
+        ["failOn=${wrap("all")}"]                                               | "--fail-on=all"
 
+        ["scanAllUnmanaged=true"]                                               | "-scan-all-unmanaged"
+        ["subProject=${wrap("foobar")}"]                                        | "--sub-project=foobar"
         ["allSubProjects=true"]                                                 | "--all-sub-projects"
+        ["configurationMatching=${wrap("foobar")}"]                             | "--configuration-matching=foobar"
+        ["configurationAttributes=[${wrap("foo")},${wrap("bar")}]"]             | "--configuration-matching=foo,bar"
+        ["initScript=file(${wrapValueBasedOnType("foo.bar", String)})"]         | "--gradle-init-script=${new File("#projectDir#/foo.bar").path}"
+        ["reachable=true"]                                                      | "--reachable"
+        ["reachableTimeout=7"]                                                  | "--reachable-timeout=7"
+        ["assetsProjectName=${wrap("foobar")}"]                                 | "--assets-project-name=foobar"
+        ["projectNamePrefix=${wrap("foobar")}"]                                 | "--project-name-prefix=foobar"
+        ["strictOutOfSync=true"]                                                | "--strict-out-of-sync"
+        ["yarnWorkspaces=true"]                                                 | "--yarn-workspaces"
+        ["skipUnresolved=true"]                                                 | "--skip-unresolved"
+        ["command=${wrap("foobar")}"]                                           | "--command=foobar"
 
         expected = flags.toString().empty ? commandName : "${commandName} ${flags}"
         mockFile = "foo.bar"
@@ -448,6 +458,10 @@ abstract class SnykCheckBaseIntegrationSpec<T extends SnykTask> extends SnykTask
             return "${type.name}.${rawValue}"
         }
         return super.wrapValueBasedOnType(rawValue, type)
+    }
+
+    String wrap(String value) {
+        wrapValueBasedOnType(value, String)
     }
 
     protected static File generateBatchWrapper(String fileName, Boolean printEnvironment = false, File baseDirectory = null) {
