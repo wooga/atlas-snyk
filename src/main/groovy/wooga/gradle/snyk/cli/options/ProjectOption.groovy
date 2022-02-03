@@ -41,7 +41,7 @@ enum ProjectOption implements OptionSpec {
 
     // Python
     skipUnresolved("--skip-unresolved", new SnykBooleanOption()),
-    command("--comand", new SnykStringOption())
+    command("--command", new SnykStringOption())
 
     private String flag
     private OptionBuilder builder

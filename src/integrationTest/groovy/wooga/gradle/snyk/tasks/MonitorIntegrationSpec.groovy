@@ -132,16 +132,10 @@ class MonitorIntegrationSpec extends SnykCheckBaseIntegrationSpec<Monitor> {
     def "composes correct CLI string from setters #setters -> #expected"() {
 
         given: "a snyk wrapper"
-        def wrapper = generateBatchWrapper("snyk-wrapper")
-        def wrapperPath = PlatformUtils.escapedPath(wrapper.path)
-        buildFile << """
-  ${extensionName}.snykPath=${wrapValueBasedOnType(wrapperPath, Directory)}
-  """
+        setWrapper()
 
         and: "a set of properties being set onto the task"
-        for (prop in setters) {
-            buildFile << "\n${subjectUnderTestName}.${prop}"
-        }
+        buildFile << "\n${subjectUnderTestName}.${prop}"
 
         when:
         def result = runTasksSuccessfully(subjectUnderTestName)
@@ -150,16 +144,16 @@ class MonitorIntegrationSpec extends SnykCheckBaseIntegrationSpec<Monitor> {
         outputContains(result, expected)
 
         where:
-        flags                                     | setters
-        ""                                        | ["trustPolicies=false"]
-        "--trust-policies"                        | ["trustPolicies=true"]
-        "--project-environment=frontend"          | ["projectEnvironment=\"frontend\""]
-        "--project-environment=frontend,backend"  | ["projectEnvironment=['frontend','backend']"]
-        "--project-lifecycle=sandbox"             | ["projectLifecycle='sandbox'"]
-        "--project-lifecycle=production,sandbox"  | ["projectLifecycle=['production','sandbox']"]
-        "--project-business-criticality=critical" | ["projectBusinessCriticality='critical'"]
-        "--project-business-criticality=high,low" | ["projectBusinessCriticality=['high','low']"]
-        "--project-tags=dept=finance,team=alpha"  | ["projectTags=['dept':'finance', 'team':'alpha']"]
+        prop                                             | flags
+        "trustPolicies=false"                            | ""
+        "trustPolicies=true"                             | "--trust-policies"
+        "projectEnvironment=\"frontend\""                | "--project-environment=frontend"
+        "projectEnvironment=['frontend','backend']"      | "--project-environment=frontend,backend"
+        "projectLifecycle='sandbox'"                     | "--project-lifecycle=sandbox"
+        "projectLifecycle=['production','sandbox']"      | "--project-lifecycle=production,sandbox"
+        "projectBusinessCriticality='critical'"          | "--project-business-criticality=critical"
+        "projectBusinessCriticality=['high','low']"      | "--project-business-criticality=high,low"
+        "projectTags=['dept':'finance', 'team':'alpha']" | "--project-tags=dept=finance,team=alpha"
 
         expected = flags.empty ? "monitor" : "monitor ${flags}"
     }

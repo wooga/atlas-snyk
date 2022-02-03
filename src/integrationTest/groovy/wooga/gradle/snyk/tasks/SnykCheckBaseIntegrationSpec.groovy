@@ -32,7 +32,22 @@ import static com.wooga.gradle.test.PropertyUtils.toSetter
 
 abstract class SnykCheckBaseIntegrationSpec<T extends SnykTask> extends SnykTaskIntegrationSpec<T> {
 
+    File snykWrapper
+
     abstract String getCommandName()
+
+    def setup() {
+        snykWrapper = generateBatchWrapper("snyk-wrapper")
+    }
+
+    void setWrapper() {
+        def wrapperDir = snykWrapper.parent
+        def wrapperPath = escapedPath(wrapperDir)
+        buildFile << """
+        ${extensionName}.executableName=${wrapValueBasedOnType(snykWrapper.name, String)}
+        ${extensionName}.snykPath=${wrapValueBasedOnType(wrapperPath, Directory)}
+        """.stripIndent()
+    }
 
     @Unroll("can set property #property with cli option #cliOption")
     def "can set property via cli option"() {
@@ -381,27 +396,18 @@ abstract class SnykCheckBaseIntegrationSpec<T extends SnykTask> extends SnykTask
     }
 
     @Unroll()
-    def "composes correct CLI string from #setters -> #expected"() {
+    def "composes correct CLI string from #setter -> #expected"() {
 
         given: "a snyk wrapper"
-        def wrapperName = "snyk-wrapper"
-        def wrapper = generateBatchWrapper(wrapperName)
-        def wrapperDir = wrapper.parent
-        def wrapperPath = escapedPath(wrapperDir)
-        buildFile << """
-        ${extensionName}.executableName=${wrapValueBasedOnType(wrapperName, String)}
-        ${extensionName}.snykPath=${wrapValueBasedOnType(wrapperPath, Directory)}
-        """.stripIndent()
-
-        and: "a mock file"
-        createFile(mockFile)
+        setWrapper()
 
         and: "a set of properties being set onto the task"
-        def platformProjectDir = projectDir.path.split("\\\\").join("/")
-        for (prop in setters) {
-            prop = prop.replaceAll("#projectDir#", platformProjectDir)
-            buildFile << "\n${subjectUnderTestName}.${prop}"
+        if (setter.concat("file")){
+            createFile(mockFile)
         }
+        def platformProjectDir = projectDir.path.split("\\\\").join("/")
+        setter = setter.replaceAll("#projectDir#", platformProjectDir)
+        buildFile << "\n${subjectUnderTestName}.${setter}"
 
         when:
         def result = runTasksSuccessfully(subjectUnderTestName)
@@ -411,42 +417,43 @@ abstract class SnykCheckBaseIntegrationSpec<T extends SnykTask> extends SnykTask
         outputContains(result, expected)
 
         where:
-        setters                                                                 | flags
-        ["allProjects=true"]                                                    | "--all-projects"
-        ["projectName=${wrap("pancakes")}"]                                     | "--project-name=pancakes"
-        ["detectionDepth=7"]                                                    | "--detection-depth=7"
-        ["exclude=[file(${wrap("foo.bar")})]"]                                  | "--exclude=${new File("#projectDir#/foo.bar").path}"
-        ["pruneRepeatedSubDependencies=true"]                                   | "--prune-repeated-subdependencies"
-        ["printDependencies=true"]                                              | "--print-deps"
-        ["remoteRepoUrl=${wrap("foo.bar/pancakes")}"]                           | "--remote-repo-url"
-        ["includeDevelopmentDependencies=true"]                                 | "--dev"
-        ["orgName=${wrap("PANCAKES")}"]                                         | "--org=PANCAKES"
-        ["packageFile = ${wrapValueBasedOnType("#projectDir#/foo.bar", File)}"] | "--file=${new File("#projectDir#/foo.bar").path}"
-        ["ignorePolicy=true"]                                                   | "--ignore-policy"
-        ["showVulnerablePaths=${wrapValueBasedOnType("all", String)}"]          | "--show-vulnerable-paths=all"
-        ["targetReference=${wrapValueBasedOnType("foobar", String)}"]           | "--target-reference"
-        ["policyPath=file(${wrapValueBasedOnType("foo.bar", String)})"]         | "--policy-path=${new File("#projectDir#/foo.bar").path}"
-        ["printJson=true"]                                                      | "--json"
-        ["jsonOutputPath=file(${wrapValueBasedOnType("foo.bar", String)})"]     | "--json-file-output=${new File("#projectDir#/foo.bar").path}"
-        ["printSarif=true"]                                                     | "--sarif"
-        ["sarifOutputPath=file(${wrapValueBasedOnType("foo.bar", String)})"]    | "--sarif-file-output=${new File("#projectDir#/foo.bar").path}"
-        ["severityThreshold=${wrap("critical")}"]                               | "--severity-threshold=critical"
-        ["failOn=${wrap("all")}"]                                               | "--fail-on=all"
-
-        ["scanAllUnmanaged=true"]                                               | "-scan-all-unmanaged"
-        ["subProject=${wrap("foobar")}"]                                        | "--sub-project=foobar"
-        ["allSubProjects=true"]                                                 | "--all-sub-projects"
-        ["configurationMatching=${wrap("foobar")}"]                             | "--configuration-matching=foobar"
-        ["configurationAttributes=[${wrap("foo")},${wrap("bar")}]"]             | "--configuration-matching=foo,bar"
-        ["initScript=file(${wrapValueBasedOnType("foo.bar", String)})"]         | "--gradle-init-script=${new File("#projectDir#/foo.bar").path}"
-        ["reachable=true"]                                                      | "--reachable"
-        ["reachableTimeout=7"]                                                  | "--reachable-timeout=7"
-        ["assetsProjectName=${wrap("foobar")}"]                                 | "--assets-project-name=foobar"
-        ["projectNamePrefix=${wrap("foobar")}"]                                 | "--project-name-prefix=foobar"
-        ["strictOutOfSync=true"]                                                | "--strict-out-of-sync"
-        ["yarnWorkspaces=true"]                                                 | "--yarn-workspaces"
-        ["skipUnresolved=true"]                                                 | "--skip-unresolved"
-        ["command=${wrap("foobar")}"]                                           | "--command=foobar"
+        setter                                                                | flags
+        // TestOption
+        "allProjects=true"                                                    | "--all-projects"
+        "projectName=${wrap("pancakes")}"                                     | "--project-name=pancakes"
+        "detectionDepth=7"                                                    | "--detection-depth=7"
+        "exclude=[file(${wrap("foo.bar")})]"                                  | "--exclude=${new File("#projectDir#/foo.bar").path}"
+        "pruneRepeatedSubDependencies=true"                                   | "--prune-repeated-subdependencies"
+        "printDependencies=true"                                              | "--print-deps"
+        "remoteRepoUrl=${wrap("foo.bar/pancakes")}"                           | "--remote-repo-url"
+        "includeDevelopmentDependencies=true"                                 | "--dev"
+        "orgName=${wrap("PANCAKES")}"                                         | "--org=PANCAKES"
+        "packageFile = ${wrapValueBasedOnType("#projectDir#/foo.bar", File)}" | "--file=${new File("#projectDir#/foo.bar").path}"
+        "ignorePolicy=true"                                                   | "--ignore-policy"
+        "showVulnerablePaths=${wrapValueBasedOnType("all", String)}"          | "--show-vulnerable-paths=all"
+        "targetReference=${wrapValueBasedOnType("foobar", String)}"           | "--target-reference"
+        "policyPath=file(${wrapValueBasedOnType("foo.bar", String)})"         | "--policy-path=${new File("#projectDir#/foo.bar").path}"
+        "printJson=true"                                                      | "--json"
+        "jsonOutputPath=file(${wrapValueBasedOnType("foo.bar", String)})"     | "--json-file-output=${new File("#projectDir#/foo.bar").path}"
+        "printSarif=true"                                                     | "--sarif"
+        "sarifOutputPath=file(${wrapValueBasedOnType("foo.bar", String)})"    | "--sarif-file-output=${new File("#projectDir#/foo.bar").path}"
+        "severityThreshold=${wrap("critical")}"                               | "--severity-threshold=critical"
+        "failOn=${wrap("all")}"                                               | "--fail-on=all"
+        // ProjectOption
+        "scanAllUnmanaged=true"                                               | "--scan-all-unmanaged"
+        "subProject=${wrap("foobar")}"                                        | "--sub-project=foobar"
+        "allSubProjects=true"                                                 | "--all-sub-projects"
+        "configurationMatching=${wrap("foobar")}"                             | "--configuration-matching=foobar"
+        "configurationAttributes=[${wrap("foo")},${wrap("bar")}]"             | "--configuration-attributes=foo,bar"
+        "initScript=${wrapValueBasedOnType("#projectDir#/foo.bar", File)}"    | "--gradle-init-script=${new File("#projectDir#/foo.bar").path}"
+        "reachable=true"                                                      | "--reachable"
+        "reachableTimeout=7"                                                  | "--reachable-timeout=7"
+        "assetsProjectName=true"                                              | "--assets-project-name"
+        "projectNamePrefix=${wrap("foobar")}"                                 | "--project-name-prefix=foobar"
+        "strictOutOfSync=true"                                                | "--strict-out-of-sync"
+        "yarnWorkspaces=true"                                                 | "--yarn-workspaces"
+        "skipUnresolved=true"                                                 | "--skip-unresolved"
+        "command=${wrap("foobar")}"                                           | "--command=foobar"
 
         expected = flags.toString().empty ? commandName : "${commandName} ${flags}"
         mockFile = "foo.bar"

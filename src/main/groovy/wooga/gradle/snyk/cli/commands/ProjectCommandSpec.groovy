@@ -113,7 +113,7 @@ trait ProjectCommandSpec extends BaseSpec implements OptionMapper<ProjectOption>
 
             case ProjectOption.initScript:
                 if (initScript.present) {
-                    value = initScript.get()
+                    value = initScript.get().asFile
                 }
                 break
         }
