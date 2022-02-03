@@ -62,7 +62,6 @@ abstract class SnykTask extends DefaultTask
         def _workingDir = workingDirectory.getOrNull()
         def _executable =  snykPath.get().file(executableName.get())
 
-
         ExecResult execResult = project.exec(new Action<ExecSpec>() {
             @Override
             void execute(ExecSpec exec) {

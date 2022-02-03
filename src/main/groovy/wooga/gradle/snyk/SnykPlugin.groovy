@@ -55,15 +55,18 @@ class SnykPlugin implements Plugin<Project> {
             mapExtensionPropertiesToMonitorTask(it, extension)
         }
 
+        def snykInstall = tasks.register("snykInstall", SnykInstall)
+
         tasks.withType(SnykInstall).configureEach {installTask ->
             installTask.installationDir.convention(extension.snykPath)
             installTask.executableName.convention(extension.executableName)
             installTask.snykVersion.convention(extension.snykVersion)
         }
-        def snykInstall = tasks.register("snykInstall", SnykInstall)
 
         tasks.withType(SnykTask).configureEach {
-            dependsOn(snykInstall)
+            if (extension.autoDownloadSnykCli.get()) {
+                dependsOn(snykInstall)
+            }
             it.workingDirectory.convention(extension.workingDirectory)
             it.executableName.convention(extension.executableName)
             it.snykPath.convention(extension.snykPath)
@@ -79,6 +82,10 @@ class SnykPlugin implements Plugin<Project> {
         def snykDefaultInstallDir= project.layout.dir(extension.snykVersion.map {version ->
             new File(project.gradle.gradleUserHomeDir, "atlas-snyk/${version}")
         })
+
+        // TODO: Move to conventions?
+        extension.autoDownloadSnykCli.convention(false)
+        extension.autoUpdateSnykCli.convention(true)
 
         extension.executableName.convention(SnykConventions.executableName.getStringValueProvider(project))
         extension.snykVersion.convention(SnykConventions.snykVersion.getStringValueProvider(project))
