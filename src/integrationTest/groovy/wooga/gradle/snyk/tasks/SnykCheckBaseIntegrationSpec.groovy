@@ -32,15 +32,10 @@ import static com.wooga.gradle.test.PropertyUtils.toSetter
 
 abstract class SnykCheckBaseIntegrationSpec<T extends SnykTask> extends SnykTaskIntegrationSpec<T> {
 
-    File snykWrapper
-
     abstract String getCommandName()
 
-    def setup() {
-        snykWrapper = generateBatchWrapper("snyk-wrapper")
-    }
-
-    void setWrapper() {
+    void setSnykWrapper() {
+        def snykWrapper = generateBatchWrapper("snyk-wrapper")
         def wrapperDir = snykWrapper.parent
         def wrapperPath = escapedPath(wrapperDir)
         buildFile << """
@@ -399,7 +394,7 @@ abstract class SnykCheckBaseIntegrationSpec<T extends SnykTask> extends SnykTask
     def "composes correct CLI string from #setter -> #expected"() {
 
         given: "a snyk wrapper"
-        setWrapper()
+        setSnykWrapper()
 
         and: "a set of properties being set onto the task"
         if (setter.concat("file")){
@@ -475,6 +470,7 @@ abstract class SnykCheckBaseIntegrationSpec<T extends SnykTask> extends SnykTask
         File wrapper
 
         wrapper = Files.createTempFile(fileName, ".bat").toFile()
+        wrapper.deleteOnExit()
         wrapper.executable = true
         if (PlatformUtils.windows) {
             wrapper << """

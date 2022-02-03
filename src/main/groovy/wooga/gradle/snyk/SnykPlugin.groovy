@@ -64,9 +64,9 @@ class SnykPlugin implements Plugin<Project> {
         }
 
         tasks.withType(SnykTask).configureEach {
-            if (extension.autoDownloadSnykCli.get()) {
-                dependsOn(snykInstall)
-            }
+            dependsOn(extension.autoDownloadSnykCli.flatMap({
+                it ? snykInstall : null
+            }))
             it.workingDirectory.convention(extension.workingDirectory)
             it.executableName.convention(extension.executableName)
             it.snykPath.convention(extension.snykPath)
@@ -79,17 +79,25 @@ class SnykPlugin implements Plugin<Project> {
 
     protected static SnykPluginExtension createAndConfigureExtension(Project project) {
         def extension = project.extensions.create(SnykPluginExtension, EXTENSION_NAME, DefaultSnykPluginExtension, project)
-        def snykDefaultInstallDir= project.layout.dir(extension.snykVersion.map {version ->
-            new File(project.gradle.gradleUserHomeDir, "atlas-snyk/${version}")
-        })
 
         // TODO: Move to conventions?
         extension.autoDownloadSnykCli.convention(false)
         extension.autoUpdateSnykCli.convention(true)
 
-        extension.executableName.convention(SnykConventions.executableName.getStringValueProvider(project))
         extension.snykVersion.convention(SnykConventions.snykVersion.getStringValueProvider(project))
-        extension.snykPath.convention(SnykConventions.snykPath.getDirectoryValueProvider(project).orElse(snykDefaultInstallDir))
+        extension.executableName.convention(SnykConventions.executableName.getStringValueProvider(project))
+
+        // If the convention for the snyk path is null, then it will use the convention provided by the
+        // install task if autoDownloadSnykCli is true
+        extension.snykPath.convention(SnykConventions.snykPath.getDirectoryValueProvider(project).
+                orElse(extension.autoDownloadSnykCli.flatMap({
+                    def snykDefaultInstallDir= project.layout.dir(extension.snykVersion.map {version ->
+                        new File(project.gradle.gradleUserHomeDir, "atlas-snyk/${version}")
+                    })
+                    return it ? snykDefaultInstallDir : null})
+                )
+        )
+
         extension.token.convention(SnykConventions.token.getStringValueProvider(project))
 
         extension.insecure.convention(SnykConventions.insecure.getBooleanValueProvider(project))

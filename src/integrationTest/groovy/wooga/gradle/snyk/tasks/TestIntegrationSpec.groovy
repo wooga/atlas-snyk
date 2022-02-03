@@ -17,6 +17,8 @@
 package wooga.gradle.snyk.tasks
 
 import com.wooga.gradle.PlatformUtils
+import org.apache.tools.ant.util.FileUtils
+import org.gradle.api.Project
 import spock.lang.Unroll
 
 import java.nio.file.Files
@@ -28,6 +30,10 @@ class TestIntegrationSpec extends SnykCheckBaseIntegrationSpec<Test> {
         "test"
     }
 
+    def setDownloadedSnyk() {
+        buildFile << "\nsnyk.autoDownloadSnykCli=true"
+    }
+
     /**
      * Tests against a NET project
      * https://docs.snyk.io/products/snyk-open-source/language-and-package-manager-support/snyk-for-.net
@@ -36,23 +42,25 @@ class TestIntegrationSpec extends SnykCheckBaseIntegrationSpec<Test> {
     def "runs test on NET project"() {
 
         given: "a NET solution or project"
-        buildFile << """
-        ${extensionName}.workingDirectory="${workingDir}"
-        """.stripIndent()
+        setDownloadedSnyk()
+        copyToProject(projectToCopy, projectDir)
 
+        and: "project-specific configurations for it"
         if (fileName != null) {
-            buildFile << "${subjectUnderTestName}.customFile=${wrapValueBasedOnType(fileName, String)}"
+            buildFile << """
+            "${subjectUnderTestName}.packageFile=${wrapValueBasedOnType(fileName, File)}"
+            """.stripIndent()
         }
 
         when:
         def result = runTasksSuccessfully(subjectUnderTestName)
 
         then:
-        outputContains(result, Test.composeStartMessage(workingDir)) || outputContains(result, Test.debugStartMessage)
+        outputContains(result, Test.composeStartMessage(projectDir.path)) || outputContains(result, Test.debugStartMessage)
 
         where:
-        type    | workingDir                                    | fileName
-        "nuget" | getCopiedResourceDirectoryPath("net_project") | "net_project.sln"
+        type    | projectToCopy                  | fileName
+        "nuget" | getResourceFile("net_project") | "net_project.sln"
     }
 
     /**
@@ -63,10 +71,11 @@ class TestIntegrationSpec extends SnykCheckBaseIntegrationSpec<Test> {
     def "runs test on gradle project"() {
 
         given: "a gradle project"
-        buildFile << """
-        ${extensionName}.workingDirectory="${workingDir}"   
-        """.stripIndent()
+        setDownloadedSnyk()
+        copyToProject(getResourceFile(projectToCopy), projectDir, false)
+        addSubproject(projectToCopy)
 
+        and: "project-specific configurations for it"
         if (all_projects) {
             buildFile << "\n${subjectUnderTestName}.allProjects=true"
         }
@@ -75,13 +84,13 @@ class TestIntegrationSpec extends SnykCheckBaseIntegrationSpec<Test> {
         def result = runTasksSuccessfully(subjectUnderTestName)
 
         then:
-        outputContains(result, Test.composeStartMessage(workingDir)) || outputContains(result, Test.debugStartMessage)
+        outputContains(result, Test.composeStartMessage(projectDir.path)) || outputContains(result, Test.debugStartMessage)
 
         where:
-        name               | workingDir                                            | all_projects
-        "Plugin"           | getCopiedResourceDirectoryPath("gradle_plugin")       | true
-        "Skeleton Package" | getCopiedResourceDirectoryPath("gradle_project_skel") | false
+        name     | projectToCopy   | all_projects
+        "Plugin" | "gradle_plugin" | true
     }
+
 
     /**
      * @return A file within a 'resources' directory in the project
@@ -100,9 +109,25 @@ class TestIntegrationSpec extends SnykCheckBaseIntegrationSpec<Test> {
     }
 
     /**
+     * Copies the file/directory onto the gradle project
+     */
+    static File copyToProject(File file, File projectDir, Boolean merge = true) {
+        if (file.directory) {
+            if (merge) {
+                org.apache.commons.io.FileUtils.copyDirectory(file, projectDir)
+            } else {
+                def subDir = new File(projectDir, file.name)
+                org.apache.commons.io.FileUtils.copyDirectory(file, subDir)
+            }
+        } else {
+            org.apache.commons.io.FileUtils.copyToDirectory(file, projectDir)
+        }
+    }
+
+    /**
      * @return The path to the copied file/directory (within a temp directory)
      */
-    static File copyResourceDirectory(String path) {
+    static File copyResourceDirectoryToTemp(String path) {
 
         def source = getResourceFile(path)
         if (!source.exists()) {
@@ -110,11 +135,12 @@ class TestIntegrationSpec extends SnykCheckBaseIntegrationSpec<Test> {
         }
 
         def copy = Files.createTempDirectory(path).toFile();
+        copy.deleteOnExit()
         org.apache.commons.io.FileUtils.copyDirectory(source, copy)
         copy
     }
 
-    static String getCopiedResourceDirectoryPath(String name) {
-        PlatformUtils.escapedPath(osPath(copyResourceDirectory(name).path))
+    static String getCopiedToTempResourceDirectoryPath(String name) {
+        PlatformUtils.escapedPath(osPath(copyResourceDirectoryToTemp(name).path))
     }
 }

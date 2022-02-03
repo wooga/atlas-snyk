@@ -16,9 +16,8 @@
 
 package wooga.gradle.snyk.tasks
 
-import com.wooga.gradle.PlatformUtils
+
 import com.wooga.gradle.test.PropertyQueryTaskWriter
-import org.gradle.api.file.Directory
 import spock.lang.Unroll
 import wooga.gradle.snyk.cli.BusinessCriticalityOption
 import wooga.gradle.snyk.cli.EnvironmentOption
@@ -132,7 +131,7 @@ class MonitorIntegrationSpec extends SnykCheckBaseIntegrationSpec<Monitor> {
     def "composes correct CLI string from setters #setters -> #expected"() {
 
         given: "a snyk wrapper"
-        setWrapper()
+        setSnykWrapper()
 
         and: "a set of properties being set onto the task"
         buildFile << "\n${subjectUnderTestName}.${prop}"
