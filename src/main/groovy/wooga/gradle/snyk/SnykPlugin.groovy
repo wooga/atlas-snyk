@@ -40,41 +40,25 @@ class SnykPlugin implements Plugin<Project> {
     static Logger logger = Logging.getLogger(SnykPlugin)
 
     static String EXTENSION_NAME = "snyk"
+    static String INSTALL_TASK_NAME = "snykInstall"
 
     @Override
     void apply(Project project) {
         def tasks = project.tasks
+        // Create the extension
         def extension = createAndConfigureExtension(project)
-
+        // Map the base task properties common to all snyk tasks
+        mapExtensionPropertiesToBaseTask(extension, project)
+        // Map the properties specific to certain tasks
         tasks.withType(Test).configureEach {
             mapExtensionPropertiesToTestTask(it, extension)
         }
-
         tasks.withType(Monitor).configureEach {
             mapExtensionPropertiesToTestTask(it, extension)
             mapExtensionPropertiesToMonitorTask(it, extension)
         }
-
-        def snykInstall = tasks.register("snykInstall", SnykInstall)
-
-        tasks.withType(SnykInstall).configureEach {installTask ->
-            installTask.installationDir.convention(extension.snykPath)
-            installTask.executableName.convention(extension.executableName)
-            installTask.snykVersion.convention(extension.snykVersion)
-        }
-
-        tasks.withType(SnykTask).configureEach {
-            dependsOn(extension.autoDownloadSnykCli.flatMap({
-                it ? snykInstall : null
-            }))
-            it.workingDirectory.convention(extension.workingDirectory)
-            it.executableName.convention(extension.executableName)
-            it.snykPath.convention(extension.snykPath)
-            it.token.convention(extension.token)
-            it.debug.convention(extension.debug)
-            it.insecure.convention(extension.insecure)
-            it.logFile.convention(project.layout.buildDirectory.file("logs/${it.name}.log"))
-        }
+        // Register an install task (to be used to install the snyk binary if need be)
+        registerInstallTask(project, extension)
     }
 
     protected static SnykPluginExtension createAndConfigureExtension(Project project) {
@@ -91,10 +75,11 @@ class SnykPlugin implements Plugin<Project> {
         // install task if autoDownloadSnykCli is true
         extension.snykPath.convention(SnykConventions.snykPath.getDirectoryValueProvider(project).
                 orElse(extension.autoDownloadSnykCli.flatMap({
-                    def snykDefaultInstallDir= project.layout.dir(extension.snykVersion.map {version ->
+                    def snykDefaultInstallDir = project.layout.dir(extension.snykVersion.map { version ->
                         new File(project.gradle.gradleUserHomeDir, "atlas-snyk/${version}")
                     })
-                    return it ? snykDefaultInstallDir : null})
+                    return it ? snykDefaultInstallDir : null
+                })
                 )
         )
 
@@ -183,6 +168,18 @@ class SnykPlugin implements Plugin<Project> {
         extension
     }
 
+    private static mapExtensionPropertiesToBaseTask(extension, project) {
+        project.tasks.withType(SnykTask).configureEach {
+            it.workingDirectory.convention(extension.workingDirectory)
+            it.executableName.convention(extension.executableName)
+            it.snykPath.convention(extension.snykPath)
+            it.token.convention(extension.token)
+            it.debug.convention(extension.debug)
+            it.insecure.convention(extension.insecure)
+            it.logFile.convention(project.layout.buildDirectory.file("logs/${it.name}.log"))
+        }
+    }
+
     private static mapExtensionPropertiesToTestTask(TestProjectCommandSpec task, SnykPluginExtension extension) {
 
         task.allProjects.convention(extension.allProjects)
@@ -234,5 +231,21 @@ class SnykPlugin implements Plugin<Project> {
         task.projectLifecycle.convention(extension.projectLifecycle)
         task.projectBusinessCriticality.convention(extension.projectBusinessCriticality)
         task.projectTags.convention(extension.projectTags)
+    }
+
+    private static void registerInstallTask(Project project, SnykPluginExtension extension) {
+        def snykInstall = project.tasks.register(INSTALL_TASK_NAME, SnykInstall)
+
+        project.tasks.withType(SnykInstall).configureEach { installTask ->
+            installTask.installationDir.convention(extension.snykPath)
+            installTask.executableName.convention(extension.executableName)
+            installTask.snykVersion.convention(extension.snykVersion)
+        }
+
+        project.tasks.withType(SnykTask).configureEach {
+            dependsOn(extension.autoDownloadSnykCli.flatMap({
+                it ? snykInstall : project.tasks.register("snykCalibrate")
+            }))
+        }
     }
 }

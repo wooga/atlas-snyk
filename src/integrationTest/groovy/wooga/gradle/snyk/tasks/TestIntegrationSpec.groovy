@@ -76,9 +76,7 @@ class TestIntegrationSpec extends SnykCheckBaseIntegrationSpec<Test> {
         addSubproject(projectToCopy)
 
         and: "project-specific configurations for it"
-        if (all_projects) {
-            buildFile << "\n${subjectUnderTestName}.allProjects=true"
-        }
+        buildFile << "\n${subjectUnderTestName}.allSubProjects=true"
 
         when:
         def result = runTasksSuccessfully(subjectUnderTestName)
@@ -87,10 +85,9 @@ class TestIntegrationSpec extends SnykCheckBaseIntegrationSpec<Test> {
         outputContains(result, Test.composeStartMessage(projectDir.path)) || outputContains(result, Test.debugStartMessage)
 
         where:
-        name     | projectToCopy   | all_projects
-        "Plugin" | "gradle_plugin" | true
+        name     | projectToCopy
+        "Plugin" | "gradle_plugin"
     }
-
 
     /**
      * @return A file within a 'resources' directory in the project
