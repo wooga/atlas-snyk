@@ -31,6 +31,7 @@ import wooga.gradle.snyk.cli.SnykTestArgumentSpec
 import wooga.gradle.snyk.cli.VulnerablePathsOption
 import wooga.gradle.snyk.internal.DefaultSnykPluginExtension
 import wooga.gradle.snyk.tasks.Monitor
+import wooga.gradle.snyk.tasks.SnykInstall
 import wooga.gradle.snyk.tasks.SnykTask
 import wooga.gradle.snyk.tasks.Test
 
@@ -55,7 +56,15 @@ class SnykPlugin implements Plugin<Project> {
             mapExtensionPropertiesToMonitorTask(it, extension)
         }
 
+        tasks.withType(SnykInstall).configureEach {installTask ->
+            installTask.installationDir.convention(extension.snykPath)
+            installTask.executableName.convention(extension.executable)
+            installTask.snykVersion.convention(extension.snykVersion)
+        }
+        def snykInstall = tasks.register("snykInstall", SnykInstall)
+
         tasks.withType(SnykTask).configureEach {
+            dependsOn(snykInstall)
             it.executable.convention(extension.executable)
             it.snykPath.convention(extension.snykPath)
             it.token.convention(extension.token)
@@ -120,9 +129,13 @@ class SnykPlugin implements Plugin<Project> {
 
     protected static SnykPluginExtension createAndConfigureExtension(Project project) {
         def extension = project.extensions.create(SnykPluginExtension, EXTENSION_NAME, DefaultSnykPluginExtension, project)
+        def snykDefaultInstallDir= project.layout.dir(extension.snykVersion.map {version ->
+            new File(project.gradle.gradleUserHomeDir, "atlas-snyk/${version}")
+        })
+
         extension.executable.convention(SnykConventions.executable.getStringValueProvider(project))
-        //TODO: IMPLEMENT snyk auto download
-        extension.snykPath.convention(SnykConventions.snykPath.getDirectoryValueProvider(project))
+        extension.snykVersion.convention(SnykConventions.snykVersion.getStringValueProvider(project))
+        extension.snykPath.convention(SnykConventions.snykPath.getDirectoryValueProvider(project).orElse(snykDefaultInstallDir))
         extension.token.convention(SnykConventions.token.getStringValueProvider(project))
 
         extension.insecure.convention(SnykConventions.insecure.getBooleanValueProvider(project))

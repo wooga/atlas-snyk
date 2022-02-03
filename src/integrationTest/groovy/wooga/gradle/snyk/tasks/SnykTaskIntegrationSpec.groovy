@@ -16,6 +16,7 @@
 
 package wooga.gradle.snyk.tasks
 
+import com.wooga.gradle.test.GradleSpecUtils
 import com.wooga.gradle.test.PropertyQueryTaskWriter
 import spock.lang.Unroll
 import wooga.gradle.snyk.SnykIntegrationSpec
@@ -138,4 +139,6 @@ abstract class SnykTaskIntegrationSpec<T extends SnykTask> extends SnykIntegrati
         value = wrapValueBasedOnType(rawValue, type, wrapValueFallback)
         expectedValue = returnValue == _ ? rawValue : returnValue
     }
+
+
 }

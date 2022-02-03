@@ -32,8 +32,14 @@ class SnykConventions {
             "snyk"
     )
 
+    static final PropertyLookup snykVersion = new PropertyLookup(
+            ["SNYK_VERSION", "SNYK_SNYK_VERSION"],
+            ["snyk.snykVersion", "snyk.version"],
+            "v1.840.0"
+    )
+
     static final PropertyLookup snykPath = new PropertyLookup(
-            ["SNYK_PATH", "SNYK_SNYK_PATH"],
+            ["SNYK_PATH", "SNYK_SNYK_PATH", ],
             ["snyk.snykPath", "snyk.path"],
             null
     )

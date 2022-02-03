@@ -18,6 +18,7 @@ package wooga.gradle.snyk
 
 import org.gradle.api.provider.Property
 import org.gradle.api.provider.Provider
+import org.gradle.api.tasks.Input
 import wooga.gradle.snyk.cli.CommonArgumentSpec
 import wooga.gradle.snyk.cli.SnykMonitorArgumentsSpec
 import wooga.gradle.snyk.cli.SnykTaskSpec
@@ -49,5 +50,20 @@ trait SnykPluginExtension implements SnykMonitorArgumentsSpec, SnykTaskSpec, Com
 
     void setAutoUpdateSnykCli(Boolean value) {
         autoUpdateSnykCli.set(value)
+    }
+
+    private final Property<String> snykVersion = objects.property(String)
+
+    @Input
+    Property<String> getSnykVersion() {
+        snykVersion
+    }
+
+    void setSnykVersion(Provider<String> value) {
+        snykVersion.set(value)
+    }
+
+    void setSnykVersion(String value) {
+        snykVersion.set(value)
     }
 }
