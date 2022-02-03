@@ -253,7 +253,7 @@ trait TestProjectCommandSpec extends ProjectCommandSpec implements OptionMapper<
     """)
     void excludeOption(String excludes) {
         exclude.set(excludes.trim().split(',').collect {
-            layout.getProjectDirectory().dir(it)
+            new File(it)
         })
     }
 
