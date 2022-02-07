@@ -27,8 +27,8 @@ class SnykConventions {
     )
 
     static final PropertyLookup executableName = new PropertyLookup(
-            "SNYK_EXECUTABLE",
-            "snyk.executable",
+            "SNYK_EXECUTABLE_NAME",
+            "snyk.executableName",
             "snyk"
     )
 
