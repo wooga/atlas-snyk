@@ -41,6 +41,10 @@ class SnykIntegrationSpec extends IntegrationSpec {
         """.stripIndent()
     }
 
+    def setup() {
+        environmentVariables.set("SNYK_TOKEN", System.getenv("ATLAS_SNYK_INTEGRATION_TOKEN"))
+    }
+
     static wrapValueFallback = { Object rawValue, String type, Closure<String> fallback ->
         switch (type) {
             case VulnerablePathsOption.getSimpleName():

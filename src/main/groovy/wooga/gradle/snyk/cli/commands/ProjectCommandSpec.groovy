@@ -8,9 +8,11 @@ import org.gradle.api.file.RegularFileProperty
 import org.gradle.api.provider.ListProperty
 import org.gradle.api.provider.Property
 import org.gradle.api.provider.Provider
+import org.gradle.api.provider.ProviderFactory
 import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.InputDirectory
 import org.gradle.api.tasks.InputFile
+import org.gradle.api.tasks.Internal
 import org.gradle.api.tasks.Optional
 import org.gradle.api.tasks.options.Option
 import wooga.gradle.OptionMapper
@@ -20,6 +22,11 @@ import wooga.gradle.snyk.cli.options.ProjectOption
  * Base spec for snyk commands
  */
 trait ProjectCommandSpec extends BaseSpec implements OptionMapper<ProjectOption> {
+
+    @Internal
+    ProviderFactory getProviderFactory() {
+        getProviders()
+    }
 
     @Override
     String getOption(ProjectOption option) {

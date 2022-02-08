@@ -3,35 +3,22 @@ package wooga.gradle.snyk.tasks
 import com.wooga.gradle.PlatformUtils
 import groovy.json.JsonSlurper
 import org.gradle.api.DefaultTask
-import org.gradle.api.file.Directory
-import org.gradle.api.file.DirectoryProperty
 import org.gradle.api.file.RegularFile
-import org.gradle.api.provider.Property
 import org.gradle.api.provider.Provider
-import org.gradle.api.tasks.Input
-import org.gradle.api.tasks.Internal
-import org.gradle.api.tasks.OutputFile
 import org.gradle.api.tasks.TaskAction
-import wooga.gradle.snyk.tasks.internal.Downlader
 import wooga.gradle.snyk.tasks.internal.CachedGroliphantDownloader
+import wooga.gradle.snyk.tasks.internal.Downlader
 import wooga.gradle.snyk.tasks.internal.SnykDownloadAsset
 
-class SnykInstall extends DefaultTask {
+class SnykInstall extends DefaultTask implements SnykInstallSpec {
 
     private static final String SNYK_RELEASE_JSON_URL = "https://static.snyk.io/cli/%s/release.json"
-    private final DirectoryProperty installationDir
-    private final Property<String> executableName
-    private final Property<String> snykVersion
 
     private final Provider<RegularFile> snykExecutable
     private final Provider<Map<String, SnykDownloadAsset>> snykReleasesProvider
 
     SnykInstall() {
-        this.installationDir = project.objects.directoryProperty()
-        this.executableName = project.objects.property(String)
-        this.snykVersion = project.objects.property(String)
-
-        this.snykReleasesProvider =  snykVersion.map ({
+        this.snykReleasesProvider =  version.map ({
             String version -> fetchSnykReleases(version)
         }.memoize())
 
@@ -76,37 +63,5 @@ class SnykInstall extends DefaultTask {
             return executableName.endsWith(".exe")? executableName : "${executableName}.exe"
         }
         return executableName
-    }
-
-    @Internal
-    DirectoryProperty getInstallationDir() {
-        return installationDir
-    }
-
-    @Internal
-    Property<String> getExecutableName() {
-        return executableName
-    }
-
-    @Input
-    Property<String> getSnykVersion() {
-        return snykVersion
-    }
-
-    @OutputFile
-    Provider<RegularFile> getSnykExecutable() {
-        return snykExecutable
-    }
-
-    void setInstallationDir(File file) {
-        installationDir.set(file)
-    }
-
-    void setInstallationDir(Provider<Directory> dirProvider) {
-        installationDir.set(dirProvider.get().asFile)
-    }
-
-    void setExecutableName(String executable) {
-        executableName.set(executable)
     }
 }

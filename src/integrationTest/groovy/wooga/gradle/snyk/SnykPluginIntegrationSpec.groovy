@@ -26,7 +26,6 @@ import wooga.gradle.snyk.tasks.Monitor
 import wooga.gradle.snyk.tasks.SnykTask
 import wooga.gradle.snyk.tasks.Test
 
-import static com.wooga.gradle.PlatformUtils.getUnixUserHomePath
 import static com.wooga.gradle.test.PropertyUtils.*
 import static com.wooga.gradle.test.SpecUtils.escapedPath
 
@@ -550,13 +549,13 @@ class SnykPluginIntegrationSpec extends SnykIntegrationSpec {
         "executableName"                 | toProviderSet(property) | "snyk_5"                                                        | _                                                                      | "Provider<String>"                          | PropertyLocation.script
         "executableName"                 | toProviderSet(property) | "snyk_6"                                                        | _                                                                      | "String"                                    | PropertyLocation.script
 
-        "snykVersion"                    | _                       | _                                                               | "v1.840.0"                                                             | "Provider<String>"                          | PropertyLocation.none
-        "snykVersion"                    | _                       | "v1.0"                                                          | _                                                                      | _                                           | PropertyLocation.environment
-        "snykVersion"                    | _                       | "v1.1"                                                          | _                                                                      | _                                           | PropertyLocation.property
-        "snykVersion"                    | toSetter(property)      | "v1.12"                                                         | _                                                                      | "Provider<String>"                          | PropertyLocation.script
-        "snykVersion"                    | toSetter(property)      | "v1.123"                                                        | _                                                                      | "String"                                    | PropertyLocation.script
-        "snykVersion"                    | toProviderSet(property) | "v2.0"                                                          | _                                                                      | "Provider<String>"                          | PropertyLocation.script
-        "snykVersion"                    | toProviderSet(property) | "v2.00"                                                         | _                                                                      | "String"                                    | PropertyLocation.script
+        "version"                        | _                       | _                                                               | "v1.840.0"                                                             | "Provider<String>"                          | PropertyLocation.none
+        "version"                        | _                       | "v1.0"                                                          | _                                                                      | _                                           | PropertyLocation.environment
+        "version"                        | _                       | "v1.1"                                                          | _                                                                      | _                                           | PropertyLocation.property
+        "version"                        | toSetter(property)      | "v1.12"                                                         | _                                                                      | "Provider<String>"                          | PropertyLocation.script
+        "version"                        | toSetter(property)      | "v1.123"                                                        | _                                                                      | "String"                                    | PropertyLocation.script
+        "version"                        | toProviderSet(property) | "v2.0"                                                          | _                                                                      | "Provider<String>"                          | PropertyLocation.script
+        "version"                        | toProviderSet(property) | "v2.00"                                                         | _                                                                      | "String"                                    | PropertyLocation.script
 
 
         "snykPath"                       | _                       | _                                                               | null                                                                   | "Provider<Directory>"                       | PropertyLocation.none
@@ -583,14 +582,20 @@ class SnykPluginIntegrationSpec extends SnykIntegrationSpec {
         invocation = (method != _) ? "${method}(${escapedValue})" : "${property} = ${escapedValue}"
     }
 
+
     @Unroll("task #dependency runs before SnykTask")
     def "task #dependency runs before SnykTask"() {
         given: "a generic token in order for snykTask to run"
         def snykTaskName = "snykTaskTest"
         buildFile << """
-        project.tasks.register("$snykTaskName", ${SnykTask.name}) {
+        project.tasks.register("$snykTaskName", ${Test.name}) {
             token="anytoken"
         }
+        """
+
+        and: "auto install enabled"
+        buildFile << """
+        snyk.autoDownloadSnykCli = true
         """
 
         when:
@@ -604,7 +609,8 @@ class SnykPluginIntegrationSpec extends SnykIntegrationSpec {
         subjectTaskIndex > dependencyIndex
 
         where:
-        dependency << ["snykInstall"]
+        dependency    | _
+        "snykInstall" | _
     }
 
 

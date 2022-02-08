@@ -16,14 +16,15 @@
 
 package wooga.gradle.snyk
 
+
 import org.gradle.api.provider.Property
 import org.gradle.api.provider.Provider
-import org.gradle.api.tasks.Input
 import wooga.gradle.snyk.cli.CommonArgumentSpec
-import wooga.gradle.snyk.cli.commands.MonitorProjectCommandSpec
 import wooga.gradle.snyk.cli.SnykTaskSpec
+import wooga.gradle.snyk.cli.commands.MonitorProjectCommandSpec
+import wooga.gradle.snyk.tasks.SnykInstallSpec
 
-trait SnykPluginExtension implements MonitorProjectCommandSpec, SnykTaskSpec, CommonArgumentSpec {
+trait SnykPluginExtension implements MonitorProjectCommandSpec, SnykTaskSpec, CommonArgumentSpec, SnykInstallSpec {
     private final Property<Boolean> autoDownloadSnykCli = objects.property(Boolean)
 
     Property<Boolean> getAutoDownloadSnykCli() {
@@ -50,20 +51,5 @@ trait SnykPluginExtension implements MonitorProjectCommandSpec, SnykTaskSpec, Co
 
     void setAutoUpdateSnykCli(Boolean value) {
         autoUpdateSnykCli.set(value)
-    }
-
-    private final Property<String> snykVersion = objects.property(String)
-
-    @Input
-    Property<String> getSnykVersion() {
-        snykVersion
-    }
-
-    void setSnykVersion(Provider<String> value) {
-        snykVersion.set(value)
-    }
-
-    void setSnykVersion(String value) {
-        snykVersion.set(value)
     }
 }

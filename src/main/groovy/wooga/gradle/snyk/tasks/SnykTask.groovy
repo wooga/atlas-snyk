@@ -21,6 +21,8 @@ import org.gradle.api.DefaultTask
 import org.gradle.api.file.RegularFile
 import org.gradle.api.file.RegularFileProperty
 import org.gradle.api.provider.Provider
+import org.gradle.api.provider.ProviderFactory
+import org.gradle.api.tasks.Internal
 import org.gradle.api.tasks.OutputFile
 import org.gradle.api.tasks.TaskAction
 import org.gradle.process.ExecResult
@@ -33,6 +35,11 @@ import wooga.gradle.snyk.internal.ArgumentsSpec
 
 abstract class SnykTask extends DefaultTask
         implements SnykActionSpec, SnykTaskSpec, ArgumentsSpec, OptionAggregator {
+
+    @Internal
+    ProviderFactory getProviderFactory() {
+        getProviders()
+    }
 
     private final RegularFileProperty logFile = project.objects.fileProperty()
 
@@ -63,8 +70,7 @@ abstract class SnykTask extends DefaultTask
         def _executable
         if (snykPath.present) {
             _executable = snykPath.file(executableName).get().asFile.path
-        }
-        else{
+        } else {
             _executable = executableName.get()
         }
 
