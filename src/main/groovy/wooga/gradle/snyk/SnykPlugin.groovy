@@ -62,8 +62,8 @@ class SnykPlugin implements Plugin<Project> {
         def extension = project.extensions.create(SnykPluginExtension, EXTENSION_NAME, DefaultSnykPluginExtension, project)
 
         // TODO: Move to conventions?
-        extension.autoDownloadSnykCli.convention(false)
-        extension.autoUpdateSnykCli.convention(true)
+        extension.autoDownload.convention(false)
+        extension.autoUpdate.convention(true)
 
         extension.version.convention(SnykConventions.version.getStringValueProvider(project))
         extension.executableName.convention(SnykConventions.executableName.getStringValueProvider(project))
@@ -76,7 +76,7 @@ class SnykPlugin implements Plugin<Project> {
         // If the convention for the snyk path is null, then it will use the convention provided by the
         // install task if autoDownloadSnykCli is true
         extension.snykPath.convention(SnykConventions.snykPath.getDirectoryValueProvider(project).
-                orElse(extension.autoDownloadSnykCli.flatMap({
+                orElse(extension.autoDownload.flatMap({
                     return it ? extension.installationDir : null
                 })
                 )
@@ -244,7 +244,7 @@ class SnykPlugin implements Plugin<Project> {
         }
 
         project.tasks.withType(SnykTask).configureEach {
-            dependsOn(extension.autoDownloadSnykCli.flatMap({
+            dependsOn(extension.autoDownload.flatMap({
                 it ? snykInstall : project.tasks.register("snykCalibrate")
             }))
         }

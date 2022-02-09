@@ -595,7 +595,7 @@ class SnykPluginIntegrationSpec extends SnykIntegrationSpec {
 
         and: "auto install enabled"
         buildFile << """
-        snyk.autoDownloadSnykCli = true
+        snyk.autoDownload = true
         """
 
         when:

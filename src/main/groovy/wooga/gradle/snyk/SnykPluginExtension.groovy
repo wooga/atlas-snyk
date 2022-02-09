@@ -22,34 +22,39 @@ import org.gradle.api.provider.Provider
 import wooga.gradle.snyk.cli.CommonArgumentSpec
 import wooga.gradle.snyk.cli.SnykTaskSpec
 import wooga.gradle.snyk.cli.commands.MonitorProjectCommandSpec
-import wooga.gradle.snyk.tasks.SnykInstallSpec
 
 trait SnykPluginExtension implements MonitorProjectCommandSpec, SnykTaskSpec, CommonArgumentSpec, SnykInstallSpec {
-    private final Property<Boolean> autoDownloadSnykCli = objects.property(Boolean)
+    private final Property<Boolean> autoDownload = objects.property(Boolean)
 
-    Property<Boolean> getAutoDownloadSnykCli() {
-        autoDownloadSnykCli
+    /**
+     * @return Whether to auto download the snyk executable if not found
+     */
+    Property<Boolean> getAutoDownload() {
+        autoDownload
     }
 
-    void setAutoDownloadSnykCli(Provider<Boolean> value) {
-        autoDownloadSnykCli.set(value)
+    void setAutoDownload(Provider<Boolean> value) {
+        autoDownload.set(value)
     }
 
-    void setAutoDownloadSnykCli(Boolean value) {
-        autoDownloadSnykCli.set(value)
+    void setAutoDownload(Boolean value) {
+        autoDownload.set(value)
     }
 
-    private final Property<Boolean> autoUpdateSnykCli = objects.property(Boolean)
+    private final Property<Boolean> autoUpdate = objects.property(Boolean)
 
-    Property<Boolean> getAutoUpdateSnykCli() {
-        autoUpdateSnykCli
+    /**
+     * @return Whether to auto update the snyk executable if present
+     */
+    Property<Boolean> getAutoUpdate() {
+        autoUpdate
     }
 
-    void setAutoUpdateSnykCli(Provider<Boolean> value) {
-        autoUpdateSnykCli.set(value)
+    void setAutoUpdate(Provider<Boolean> value) {
+        autoUpdate.set(value)
     }
 
-    void setAutoUpdateSnykCli(Boolean value) {
-        autoUpdateSnykCli.set(value)
+    void setAutoUpdate(Boolean value) {
+        autoUpdate.set(value)
     }
 }

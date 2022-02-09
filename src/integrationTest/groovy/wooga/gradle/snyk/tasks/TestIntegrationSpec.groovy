@@ -31,7 +31,7 @@ class TestIntegrationSpec extends SnykCheckBaseIntegrationSpec<Test> {
     }
 
     def setDownloadedSnyk() {
-        buildFile << "\nsnyk.autoDownloadSnykCli=true"
+        buildFile << "\nsnyk.autoDownload=true"
     }
 
     /**

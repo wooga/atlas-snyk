@@ -6,6 +6,7 @@ import org.gradle.api.DefaultTask
 import org.gradle.api.file.RegularFile
 import org.gradle.api.provider.Provider
 import org.gradle.api.tasks.TaskAction
+import wooga.gradle.snyk.SnykInstallSpec
 import wooga.gradle.snyk.tasks.internal.CachedGroliphantDownloader
 import wooga.gradle.snyk.tasks.internal.Downlader
 import wooga.gradle.snyk.tasks.internal.SnykDownloadAsset

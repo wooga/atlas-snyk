@@ -1,4 +1,4 @@
-package wooga.gradle.snyk.tasks
+package wooga.gradle.snyk
 
 import com.wooga.gradle.BaseSpec
 import org.gradle.api.file.Directory
