@@ -62,6 +62,7 @@ abstract class OptionBuilder<T> {
     Class getOptionType() { T.class }
 
     abstract List<OptionInput> getInputs()
+    protected abstract String generateOutputConstrained(String flag, T value)
 
     /**
      * Will attempt to generate valid output from the given value
@@ -75,17 +76,11 @@ abstract class OptionBuilder<T> {
         // If the type could not be casted directly,
         // call the optional convert function
         catch (ex) {
-            constrainedValue = convert(value)
+            // TODO: Perhaps add an optional converter for given value types
             if (constrainedValue == null) {
                 return null
             }
         }
         generateOutputConstrained(flag, constrainedValue)
-    }
-
-    protected abstract String generateOutputConstrained(String flag, T value)
-
-    protected T convert(Object value) {
-        null
     }
 }

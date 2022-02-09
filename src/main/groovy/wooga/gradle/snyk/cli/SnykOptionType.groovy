@@ -1,6 +1,5 @@
 package wooga.gradle.snyk.cli
 
-import org.gradle.api.file.Directory
 import wooga.gradle.OptionBuilder
 import wooga.gradle.OptionInput
 
