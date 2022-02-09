@@ -26,16 +26,22 @@ class SnykConventions {
             null
     )
 
-    static final PropertyLookup executable = new PropertyLookup(
-            "SNYK_EXECUTABLE",
-            "snyk.executable",
+    static final PropertyLookup executableName = new PropertyLookup(
+            "SNYK_EXECUTABLE_NAME",
+            "snyk.executableName",
             "snyk"
     )
 
-    static final PropertyLookup snykVersion = new PropertyLookup(
-            ["SNYK_VERSION", "SNYK_SNYK_VERSION"],
-            ["snyk.snykVersion", "snyk.version"],
+    static final PropertyLookup version = new PropertyLookup(
+            "SNYK_VERSION",
+            "snyk.version",
             "v1.840.0"
+    )
+
+    static final PropertyLookup installationDir = new PropertyLookup(
+            "SNYK_INSTALLATION_DIR",
+            "snyk.installationDir",
+            null
     )
 
     static final PropertyLookup snykPath = new PropertyLookup(

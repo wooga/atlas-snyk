@@ -16,14 +16,28 @@
 
 package wooga.gradle.snyk.tasks
 
-import org.gradle.api.provider.Provider
-import org.gradle.api.tasks.Input
-import wooga.gradle.snyk.cli.SnykTestArgumentSpec
 
-class Test extends SnykTask implements SnykTestArgumentSpec {
-    @Override
-    @Input
-    Provider<List<String>> getArguments() {
-        project.provider({ [] as List<String> })
-    }
+import wooga.gradle.snyk.cli.commands.TestProjectCommandSpec
+import wooga.gradle.snyk.cli.options.ProjectOption
+import wooga.gradle.snyk.cli.options.TestOption
+
+/**
+ * The snyk test command checks projects for open source vulnerabilities and license issues.
+ * The test command tries to auto-detect supported manifest files with dependencies and test those.
+ * (https://docs.snyk.io/features/snyk-cli/commands/test)
+ */
+class Test extends SnykTask implements TestProjectCommandSpec {
+
+  @Override
+  void addMainOptions(List<String> args) {
+    args.add("test")
+    args.addAll(getMappedOptions(this, TestOption))
+    args.addAll(getMappedOptions(this, ProjectOption))
+  }
+
+  static String composeStartMessage(String workingDir) {
+    "Testing ${workingDir.replace("\\\\", '\\')}"
+  }
+
+  static final String debugStartMessage = "===== DEBUG INFORMATION START ====="
 }

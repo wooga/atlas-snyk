@@ -16,21 +16,30 @@
 
 package wooga.gradle.snyk.tasks
 
-
+import org.gradle.api.Action
 import org.gradle.api.DefaultTask
 import org.gradle.api.file.RegularFile
 import org.gradle.api.file.RegularFileProperty
-import org.gradle.api.provider.ListProperty
 import org.gradle.api.provider.Provider
 import org.gradle.api.provider.ProviderFactory
-import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.Internal
 import org.gradle.api.tasks.OutputFile
 import org.gradle.api.tasks.TaskAction
+import org.gradle.process.ExecResult
+import org.gradle.process.ExecSpec
+import wooga.gradle.OptionAggregator
 import wooga.gradle.snyk.SnykActionSpec
+import wooga.gradle.snyk.cli.SnykExitCode
 import wooga.gradle.snyk.cli.SnykTaskSpec
+import wooga.gradle.snyk.internal.ArgumentsSpec
 
-abstract class SnykTask extends DefaultTask implements SnykActionSpec, SnykTaskSpec  {
+abstract class SnykTask extends DefaultTask
+        implements SnykActionSpec, SnykTaskSpec, ArgumentsSpec, OptionAggregator {
+
+    @Internal
+    ProviderFactory getProviderFactory() {
+        getProviders()
+    }
 
     private final RegularFileProperty logFile = project.objects.fileProperty()
 
@@ -47,47 +56,56 @@ abstract class SnykTask extends DefaultTask implements SnykActionSpec, SnykTaskS
         logFile.set(value)
     }
 
-    private final ListProperty<String> additionalArguments = project.objects.listProperty(String)
+    abstract void addMainOptions(List<String> args)
 
-    @Override
-    void setAdditionalArguments(Iterable<String> value) {
-        additionalArguments.set(value)
-    }
-
-    @Override
-    void setAdditionalArguments(Provider<? extends Iterable<String>> value) {
-        additionalArguments.set(value)
-    }
-
-    @Override
-    void argument(String argument) {
-        additionalArguments.add(argument)
-    }
-
-    @Override
-    void arguments(String... arguments) {
-        additionalArguments.addAll(arguments)
-    }
-
-    @Override
-    void arguments(Iterable<String> arguments) {
-        additionalArguments.addAll(arguments)
+    SnykTask() {
+        arguments.set(project.provider({ composeArguments() }))
     }
 
     @TaskAction
     protected void exec() {
-        def arguments = arguments.get()
+
+        def _arguments = getAllArguments()
+        def _workingDir = workingDirectory.getOrNull()
+        def _executable
+        if (snykPath.present) {
+            _executable = snykPath.file(executableName).get().asFile.path
+        } else {
+            _executable = executableName.get()
+        }
+
+        ExecResult execResult = project.exec(new Action<ExecSpec>() {
+            @Override
+            void execute(ExecSpec exec) {
+                exec.with {
+                    executable _executable
+                    args = _arguments
+                    ignoreExitValue = true
+                    // Optional working directory
+                    if (_workingDir != null) {
+                        workingDir(_workingDir)
+                    }
+                }
+            }
+        })
+        handleExitCode(execResult.exitValue)
     }
 
-    @Override
-    @Internal
-    ProviderFactory getProviderFactory() {
-        return super.getProviderFactory()
+    List<String> composeArguments() {
+        List<String> args = new ArrayList<String>()
+        addMainOptions(args)
+        args
     }
 
-    @Input
-    @Override
-    Provider<List<String>> getArguments() {
-        project.provider({ [] as List<String> })
+    protected void handleExitCode(int code) {
+        /*
+            Possible exit codes and their meaning:
+                0: success, no vulnerabilities found
+                1: action_needed, vulnerabilities found
+                2: failure, try to re-run command
+                3: failure, no supported projects detected\
+         */
+        SnykExitCode testExitCode = SnykExitCode.values()[code]
+        logger.info(testExitCode.message)
     }
 }

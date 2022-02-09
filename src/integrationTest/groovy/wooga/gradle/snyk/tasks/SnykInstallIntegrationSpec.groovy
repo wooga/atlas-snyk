@@ -1,40 +1,56 @@
 package wooga.gradle.snyk.tasks
 
-import com.wooga.gradle.test.IntegrationSpec
+import com.wooga.gradle.test.PropertyQueryTaskWriter
 import org.apache.commons.codec.digest.DigestUtils
 import spock.lang.IgnoreIf
 import spock.lang.Unroll
+import wooga.gradle.snyk.SnykIntegrationSpec
 import wooga.gradle.snyk.SnykPlugin
 
-import static com.wooga.gradle.PlatformUtils.getUnixUserHomePath
-import static com.wooga.gradle.PlatformUtils.isLinux
-import static com.wooga.gradle.PlatformUtils.isMac
-import static com.wooga.gradle.PlatformUtils.isWindows
+import static com.wooga.gradle.PlatformUtils.*
+import static com.wooga.gradle.test.PropertyUtils.toProviderSet
+import static com.wooga.gradle.test.PropertyUtils.toSetter
 
-class SnykInstallIntegrationSpec extends IntegrationSpec {
+class SnykInstallIntegrationSpec extends SnykIntegrationSpec {
 
     /**Snyk cache for tests where the downloading process itself doesn't matter*/
-    private static final String CACHED_SNYK_DIR = System.getProperty("java.io.tmpdir") + "/atlas-snyk-test"
-    private static final String TEST_TASK_NAME = "installTestTask"
+    private static final File CACHED_SNYK_DIR = File.createTempDir("atlas-snyk", "installTest")
+
+    String subjectUnderTestName = "installTest"
+    String subjectUnderTestTypeName = SnykInstall.name
 
     def setup() {
         buildFile << """
-            ${applyPlugin(SnykPlugin)}
+            project.tasks.register("${subjectUnderTestName}", ${subjectUnderTestTypeName})
         """
     }
 
     def "install snyk using plugin defaults"() {
         given:
         def pluginInstallTask = "snykInstall"
-        when:
-        runTasksSuccessfully(pluginInstallTask)
-        then:
+
+        and: "snyk plugin applied with conventions"
+        buildFile << """
+            ${applyPlugin(SnykPlugin)}
+        """.stripIndent()
+
+        and: "a future snyk executable"
         def expectedSnykFile = new File("${getGradleUserHome()}/atlas-snyk/v1.840.0/${isWindows() ? "snyk.exe" : "snyk"}")
+        if (expectedSnykFile.exists()) {
+            expectedSnykFile.delete()
+        }
+
+        when:
+        def result = runTasksSuccessfully(pluginInstallTask)
+
+        then:
+        !result.wasSkipped(pluginInstallTask)
+
         expectedSnykFile.file
+        expectedSnykFile.exists()
+
         def process = Runtime.runtime.exec([expectedSnykFile.absolutePath, "--version"] as String[])
         process.waitFor() == 0
-        cleanup:
-        expectedSnykFile.delete()
     }
 
 
@@ -42,10 +58,10 @@ class SnykInstallIntegrationSpec extends IntegrationSpec {
     @Unroll("installs valid snyk file from version #version on target directory for macOS")
     def "installs given snyk version on target directory for macOS"() {
         given: "a snyk install task with specified parameters"
-        buildFile << buildGradleSnykInstallTask(version, new File(projectDir, targetDir), executableName)
+        appendToSubjectTask(buildGradleSnykInstallTask(version, new File(projectDir, targetDir), executableName))
 
         when:
-        runTasksSuccessfully(TEST_TASK_NAME)
+        runTasksSuccessfully(subjectUnderTestName)
 
         then:
         def expectedSnykFile = new File(projectDir, expectedSnykExec.path)
@@ -66,10 +82,10 @@ class SnykInstallIntegrationSpec extends IntegrationSpec {
     @Unroll("installs valid snyk file from version #version on target directory for linux")
     def "installs given snyk version on target directory for linux"() {
         given: "a snyk install task with specified parameters"
-        buildFile << buildGradleSnykInstallTask(version, new File(projectDir, targetDir), executableName)
+        appendToSubjectTask(buildGradleSnykInstallTask(version, new File(projectDir, targetDir), executableName))
 
         when:
-        runTasksSuccessfully(TEST_TASK_NAME)
+        runTasksSuccessfully(subjectUnderTestName)
 
         then:
         def expectedSnykFile = new File(projectDir, expectedSnykExec.path)
@@ -89,10 +105,10 @@ class SnykInstallIntegrationSpec extends IntegrationSpec {
     @Unroll("installs valid snyk file from version #version on target directory for windows")
     def "installs given snyk version on target directory for windows"() {
         given: "a snyk install task with specified parameters"
-        buildFile << buildGradleSnykInstallTask(version, new File(projectDir, targetDir), executableName)
+        appendToSubjectTask(buildGradleSnykInstallTask(version, new File(projectDir, targetDir), executableName))
 
         when:
-        runTasksSuccessfully(TEST_TASK_NAME)
+        runTasksSuccessfully(subjectUnderTestName)
 
         then:
         def expectedSnykFile = new File(projectDir, expectedSnykExec.path)
@@ -110,31 +126,116 @@ class SnykInstallIntegrationSpec extends IntegrationSpec {
 
     def "doesn't redownload snyk if identical version already exists on installationDir"() {
         given: "a snyk install task"
-        buildFile << buildGradleSnykInstallTask("v1.839.0", new File(CACHED_SNYK_DIR), "snyk")
+        appendToSubjectTask(buildGradleSnykInstallTask("v1.839.0", CACHED_SNYK_DIR, "snyk"))
 
         and: "a already existing snyk"
-        def targetSnykFile = new File("$CACHED_SNYK_DIR/${isWindows() ? "snyk.exe" : "snyk"}")
+        def targetSnykFile = new File(CACHED_SNYK_DIR, "${isWindows() ? "snyk.exe" : "snyk"}")
         if (!targetSnykFile.file) {
-            runTasksSuccessfully(TEST_TASK_NAME)
+            runTasksSuccessfully(subjectUnderTestName)
         }
         assert targetSnykFile.file
 
         when:
         def originalCreationTS = targetSnykFile.lastModified()
-        runTasksSuccessfully(TEST_TASK_NAME)
+        runTasksSuccessfully(subjectUnderTestName)
 
         then:
         def snykFile = new File(targetSnykFile.path)
         originalCreationTS == snykFile.lastModified()
     }
 
+    @Unroll("can set property #property with cli option #cliOption")
+    def "can set property via cli option"() {
+        given: "a task to read back the value"
+        def query = new PropertyQueryTaskWriter("${subjectUnderTestName}.${property}")
+        query.write(buildFile)
+
+        and: "tasks to execute"
+        def tasks = [subjectUnderTestName, cliOption]
+        if (rawValue != _) {
+            tasks.add(value)
+        }
+        tasks.add(query.taskName)
+
+        and: "disable subject under test to no fail"
+        appendToSubjectTask("enabled=false")
+
+        when:
+        def result = runTasksSuccessfully(*tasks)
+
+        then:
+        query.matches(result, expectedValue)
+
+        where:
+        property          | cliOption            | rawValue                        | returnValue | type
+        "installationDir" | "--installation-dir" | osPath("/path/to/output.sarif") | _           | "CLIString"
+        "executableName"  | "--executable-name"  | "my-custom-snyk"                | _           | "CLIString"
+        "version"         | "--version"          | "22.11.33"                      | _           | "CLIString"
+
+        value = wrapValueBasedOnType(rawValue, type, wrapValueFallback)
+        expectedValue = returnValue == _ ? rawValue : returnValue
+    }
+
+    @Unroll("can set property #property with #method and type #type")
+    def "can set property SnykTask"() {
+        given: "a task to read back the value"
+        def query = new PropertyQueryTaskWriter("${subjectUnderTestName}.${property}")
+        query.write(buildFile)
+
+        and: "a set property"
+        appendToSubjectTask("${method}($value)")
+
+        when:
+        def result = runTasksSuccessfully(query.taskName)
+
+        then:
+        query.matches(result, expectedValue)
+
+        where:
+        property          | method                  | rawValue                       | returnValue | type
+        "executableName"  | toProviderSet(property) | "snyk1"                        | _           | "String"
+        "executableName"  | toProviderSet(property) | "snyk2"                        | _           | "Provider<String>"
+        "executableName"  | toSetter(property)      | "snyk3"                        | _           | "String"
+        "executableName"  | toSetter(property)      | "snyk4"                        | _           | "Provider<String>"
+
+        "version"         | toProviderSet(property) | "11.22.1"                      | _           | "String"
+        "version"         | toProviderSet(property) | "11.22.2"                      | _           | "Provider<String>"
+        "version"         | toSetter(property)      | "11.22.3"                      | _           | "String"
+        "version"         | toSetter(property)      | "11.22.4"                      | _           | "Provider<String>"
+
+        "installationDir" | toProviderSet(property) | osPath("/path/to/installDir1") | _           | "File"
+        "installationDir" | toProviderSet(property) | osPath("/path/to/installDir2") | _           | "Provider<Directory>"
+        "installationDir" | toSetter(property)      | osPath("/path/to/installDir3") | _           | "File"
+        "installationDir" | toSetter(property)      | osPath("/path/to/installDir4") | _           | "Provider<Directory>"
+        "installationDir" | property                | osPath("/path/to/installDir5") | _           | "String"
+
+        value = wrapValueBasedOnType(rawValue, type, wrapValueFallback)
+        expectedValue = returnValue == _ ? rawValue : returnValue
+    }
+
+    @Unroll
+    def "help prints commandline flag '#commandlineFlag' description"() {
+        when:
+        def result = runTasksSuccessfully("help", "--task", subjectUnderTestName)
+
+        then:
+        result.standardOutput.contains("Description")
+        result.standardOutput.contains("Group")
+
+        result.standardOutput.contains(commandlineFlag)
+
+        where:
+        commandlineFlag      | _
+        "--executable-name"  | _
+        "--installation-dir" | _
+        "--version"          | _
+    }
+
     def buildGradleSnykInstallTask(String snykVersion, File installationDir, String executableName = null) {
         return """
-        project.tasks.register("${TEST_TASK_NAME}", ${SnykInstall.name}) { it ->
-            it.snykVersion = "${snykVersion}"
-            it.installationDir = ${wrapValueBasedOnType(installationDir, File)}
-            it.executableName = ${executableName ? "\"${executableName}\"" : "null"}
-        }
+            version = "${snykVersion}"
+            installationDir = ${wrapValueBasedOnType(installationDir, File)}
+            executableName = ${wrapValueBasedOnType(executableName ?: "snyk", String)}
         """
     }
 

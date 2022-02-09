@@ -16,6 +16,7 @@
 
 package wooga.gradle.snyk.tasks
 
+
 import com.wooga.gradle.test.PropertyQueryTaskWriter
 import spock.lang.Unroll
 import wooga.gradle.snyk.cli.BusinessCriticalityOption
@@ -26,6 +27,11 @@ import static com.wooga.gradle.test.PropertyUtils.toProviderSet
 import static com.wooga.gradle.test.PropertyUtils.toSetter
 
 class MonitorIntegrationSpec extends SnykCheckBaseIntegrationSpec<Monitor> {
+
+    @Override
+    String getCommandName() {
+        "monitor"
+    }
 
     @Unroll("can set property #property with cli option #cliOption")
     def "can set property via cli option"() {
@@ -121,24 +127,33 @@ class MonitorIntegrationSpec extends SnykCheckBaseIntegrationSpec<Monitor> {
         expectedValue = returnValue == _ ? rawValue : returnValue
     }
 
-    @Unroll
-    def "help prints commandline flag '#commandlineFlag' description"() {
+    @Unroll()
+    def "composes correct CLI string from setters #setters -> #expected"() {
+
+        given: "a snyk wrapper"
+        setSnykWrapper()
+
+        and: "a set of properties being set onto the task"
+        buildFile << "\n${subjectUnderTestName}.${prop}"
+
         when:
-        def result = runTasksSuccessfully("help", "--task", subjectUnderTestName)
+        def result = runTasksSuccessfully(subjectUnderTestName)
 
         then:
-        result.standardOutput.contains("Description")
-        result.standardOutput.contains("Group")
-
-        result.standardOutput.contains(commandlineFlag)
+        outputContains(result, expected)
 
         where:
-        commandlineFlag                  | _
-        "--project-business-criticality" | _
-        "--project-environment"          | _
-        "--project-lifecycle"            | _
-        "--project-tags"                 | _
-        "--tags"                         | _
-        "--trust-policies"               | _
+        prop                                             | flags
+        "trustPolicies=false"                            | ""
+        "trustPolicies=true"                             | "--trust-policies"
+        "projectEnvironment=\"frontend\""                | "--project-environment=frontend"
+        "projectEnvironment=['frontend','backend']"      | "--project-environment=frontend,backend"
+        "projectLifecycle='sandbox'"                     | "--project-lifecycle=sandbox"
+        "projectLifecycle=['production','sandbox']"      | "--project-lifecycle=production,sandbox"
+        "projectBusinessCriticality='critical'"          | "--project-business-criticality=critical"
+        "projectBusinessCriticality=['high','low']"      | "--project-business-criticality=high,low"
+        "projectTags=['dept':'finance', 'team':'alpha']" | "--project-tags=dept=finance,team=alpha"
+
+        expected = flags.empty ? "monitor" : "monitor ${flags}"
     }
 }

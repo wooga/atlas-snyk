@@ -26,7 +26,6 @@ import wooga.gradle.snyk.tasks.Monitor
 import wooga.gradle.snyk.tasks.SnykTask
 import wooga.gradle.snyk.tasks.Test
 
-import static com.wooga.gradle.PlatformUtils.getUnixUserHomePath
 import static com.wooga.gradle.test.PropertyUtils.*
 import static com.wooga.gradle.test.SpecUtils.escapedPath
 
@@ -68,8 +67,8 @@ class SnykPluginIntegrationSpec extends SnykIntegrationSpec {
         Monitor  | "allProjects"                    | true                                 | "Boolean"                         | ConventionSource.extension(extensionName, property) | _
         Test     | "detectionDepth"                 | 22                                   | "Integer"                         | ConventionSource.extension(extensionName, property) | _
         Monitor  | "detectionDepth"                 | 45                                   | "Integer"                         | ConventionSource.extension(extensionName, property) | _
-        Test     | "exclude"                        | [osPath('/path/exclude1')]           | "List<Directory>"                 | ConventionSource.extension(extensionName, property) | _
-        Monitor  | "exclude"                        | [osPath('/path/exclude2')]           | "List<Directory>"                 | ConventionSource.extension(extensionName, property) | _
+        Test     | "exclude"                        | [osPath('/path/exclude1')]           | "List<File>"                      | ConventionSource.extension(extensionName, property) | _
+        Monitor  | "exclude"                        | [osPath('/path/exclude2')]           | "List<File>"                      | ConventionSource.extension(extensionName, property) | _
         Test     | "pruneRepeatedSubDependencies"   | true                                 | "Boolean"                         | ConventionSource.extension(extensionName, property) | _
         Monitor  | "pruneRepeatedSubDependencies"   | true                                 | "Boolean"                         | ConventionSource.extension(extensionName, property) | _
         Test     | "printDependencies"              | true                                 | "Boolean"                         | ConventionSource.extension(extensionName, property) | _
@@ -148,8 +147,8 @@ class SnykPluginIntegrationSpec extends SnykIntegrationSpec {
         Test     | "token"                          | "test_token_1"                       | "String"                          | ConventionSource.extension(extensionName, property) | _
         Monitor  | "token"                          | "test_token_2"                       | "String"                          | ConventionSource.extension(extensionName, property) | _
 
-        Test     | "executable"                     | "snyk1"                              | "String"                          | ConventionSource.extension(extensionName, property) | _
-        Monitor  | "executable"                     | "snyk2"                              | "String"                          | ConventionSource.extension(extensionName, property) | _
+        Test     | "executableName"                 | "snyk1"                              | "String"                          | ConventionSource.extension(extensionName, property) | _
+        Monitor  | "executableName"                 | "snyk2"                              | "String"                          | ConventionSource.extension(extensionName, property) | _
         Test     | "snykPath"                       | osPath("/path/to/snyk_home_1")       | "Directory"                       | ConventionSource.extension(extensionName, property) | _
         Monitor  | "snykPath"                       | osPath("/path/to/snyk_home_2")       | "Directory"                       | ConventionSource.extension(extensionName, property) | _
 
@@ -213,13 +212,13 @@ class SnykPluginIntegrationSpec extends SnykIntegrationSpec {
         "detectionDepth"                 | toProviderSet(property) | 5                                                               | _                                                                      | "Provider<Integer>"                         | PropertyLocation.script
         "detectionDepth"                 | toProviderSet(property) | 6                                                               | _                                                                      | "Integer"                                   | PropertyLocation.script
 
-        "exclude"                        | _                       | _                                                               | null                                                                   | "Provider<List<Directory>>"                 | PropertyLocation.none
+        "exclude"                        | _                       | _                                                               | null                                                                   | "Provider<List<File>>"                      | PropertyLocation.none
         "exclude"                        | _                       | [osPath('/path/one'), osPath('/path/two')].join(',')            | [osPath('/path/one'), osPath('/path/two')]                             | _                                           | PropertyLocation.environment
         "exclude"                        | _                       | [osPath('/path/one'), osPath('/path/two')].join(',')            | [osPath('/path/one'), osPath('/path/two')]                             | _                                           | PropertyLocation.property
-        "exclude"                        | toSetter(property)      | [osPath('/path/one'), osPath('/path/two')]                      | _                                                                      | "Provider<List<Directory>>"                 | PropertyLocation.script
-        "exclude"                        | toSetter(property)      | [osPath('/path/one'), osPath('/path/two')]                      | _                                                                      | "List<Directory>"                           | PropertyLocation.script
-        "exclude"                        | toProviderSet(property) | [osPath('/path/one'), osPath('/path/two')]                      | _                                                                      | "Provider<List<Directory>>"                 | PropertyLocation.script
-        "exclude"                        | toProviderSet(property) | [osPath('/path/one'), osPath('/path/two')]                      | _                                                                      | "List<Directory>"                           | PropertyLocation.script
+        "exclude"                        | toSetter(property)      | [osPath('/path/one'), osPath('/path/two')]                      | _                                                                      | "Provider<List<File>>"                      | PropertyLocation.script
+        "exclude"                        | toSetter(property)      | [osPath('/path/one'), osPath('/path/two')]                      | _                                                                      | "List<File>"                                | PropertyLocation.script
+        "exclude"                        | toProviderSet(property) | [osPath('/path/one'), osPath('/path/two')]                      | _                                                                      | "Provider<List<File>>"                      | PropertyLocation.script
+        "exclude"                        | toProviderSet(property) | [osPath('/path/one'), osPath('/path/two')]                      | _                                                                      | "List<File>"                                | PropertyLocation.script
 
         "pruneRepeatedSubDependencies"   | _                       | _                                                               | false                                                                  | "Provider<Boolean>"                         | PropertyLocation.none
         "pruneRepeatedSubDependencies"   | _                       | "true"                                                          | true                                                                   | _                                           | PropertyLocation.environment
@@ -533,7 +532,8 @@ class SnykPluginIntegrationSpec extends SnykIntegrationSpec {
         "yarnWorkspaces"                 | toProviderSet(property) | true                                                            | _                                                                      | "Provider<Boolean>"                         | PropertyLocation.script
         "yarnWorkspaces"                 | toProviderSet(property) | false                                                           | _                                                                      | "Boolean"                                   | PropertyLocation.script
 
-        "token"                          | _                       | _                                                               | null                                                                   | "Provider<String>"                          | PropertyLocation.none
+        // Not correct since the token is set by convention fron environment
+        //"token"                          | _                       | _                                                               | null                                                                   | "Provider<String>"                          | PropertyLocation.none
         "token"                          | _                       | "test_token1"                                                   | _                                                                      | _                                           | PropertyLocation.environment
         "token"                          | _                       | "test_token2"                                                   | _                                                                      | _                                           | PropertyLocation.property
         "token"                          | toSetter(property)      | "test_token3"                                                   | _                                                                      | "Provider<String>"                          | PropertyLocation.script
@@ -541,24 +541,24 @@ class SnykPluginIntegrationSpec extends SnykIntegrationSpec {
         "token"                          | toProviderSet(property) | "test_token5"                                                   | _                                                                      | "Provider<String>"                          | PropertyLocation.script
         "token"                          | toProviderSet(property) | "test_token6"                                                   | _                                                                      | "String"                                    | PropertyLocation.script
 
-        "executable"                     | _                       | "snyk"                                                          | _                                                                      | "Provider<String>"                          | PropertyLocation.none
-        "executable"                     | _                       | "snyk_1"                                                        | _                                                                      | _                                           | PropertyLocation.environment
-        "executable"                     | _                       | "snyk_2"                                                        | _                                                                      | _                                           | PropertyLocation.property
-        "executable"                     | toSetter(property)      | "snyk_3"                                                        | _                                                                      | "Provider<String>"                          | PropertyLocation.script
-        "executable"                     | toSetter(property)      | "snyk_4"                                                        | _                                                                      | "String"                                    | PropertyLocation.script
-        "executable"                     | toProviderSet(property) | "snyk_5"                                                        | _                                                                      | "Provider<String>"                          | PropertyLocation.script
-        "executable"                     | toProviderSet(property) | "snyk_6"                                                        | _                                                                      | "String"                                    | PropertyLocation.script
+        "executableName"                 | _                       | "snyk"                                                          | _                                                                      | "Provider<String>"                          | PropertyLocation.none
+        "executableName"                 | _                       | "snyk_1"                                                        | _                                                                      | _                                           | PropertyLocation.environment
+        "executableName"                 | _                       | "snyk_2"                                                        | _                                                                      | _                                           | PropertyLocation.property
+        "executableName"                 | toSetter(property)      | "snyk_3"                                                        | _                                                                      | "Provider<String>"                          | PropertyLocation.script
+        "executableName"                 | toSetter(property)      | "snyk_4"                                                        | _                                                                      | "String"                                    | PropertyLocation.script
+        "executableName"                 | toProviderSet(property) | "snyk_5"                                                        | _                                                                      | "Provider<String>"                          | PropertyLocation.script
+        "executableName"                 | toProviderSet(property) | "snyk_6"                                                        | _                                                                      | "String"                                    | PropertyLocation.script
 
-        "snykVersion"                    | _                       | _                                                               | "v1.840.0"                                                             | "Provider<String>"                          | PropertyLocation.none
-        "snykVersion"                    | _                       | "v1.0"                                                          | _                                                                      | _                                           | PropertyLocation.environment
-        "snykVersion"                    | _                       | "v1.1"                                                          | _                                                                      | _                                           | PropertyLocation.property
-        "snykVersion"                    | toSetter(property)      | "v1.12"                                                         | _                                                                      | "Provider<String>"                          | PropertyLocation.script
-        "snykVersion"                    | toSetter(property)      | "v1.123"                                                        | _                                                                      | "String"                                    | PropertyLocation.script
-        "snykVersion"                    | toProviderSet(property) | "v2.0"                                                          | _                                                                      | "Provider<String>"                          | PropertyLocation.script
-        "snykVersion"                    | toProviderSet(property) | "v2.00"                                                         | _                                                                      | "String"                                    | PropertyLocation.script
+        "version"                        | _                       | _                                                               | "v1.840.0"                                                             | "Provider<String>"                          | PropertyLocation.none
+        "version"                        | _                       | "v1.0"                                                          | _                                                                      | _                                           | PropertyLocation.environment
+        "version"                        | _                       | "v1.1"                                                          | _                                                                      | _                                           | PropertyLocation.property
+        "version"                        | toSetter(property)      | "v1.12"                                                         | _                                                                      | "Provider<String>"                          | PropertyLocation.script
+        "version"                        | toSetter(property)      | "v1.123"                                                        | _                                                                      | "String"                                    | PropertyLocation.script
+        "version"                        | toProviderSet(property) | "v2.0"                                                          | _                                                                      | "Provider<String>"                          | PropertyLocation.script
+        "version"                        | toProviderSet(property) | "v2.00"                                                         | _                                                                      | "String"                                    | PropertyLocation.script
 
 
-        "snykPath"                       | _                       | _                                                               | osPath("${getGradleUserHome()}/atlas-snyk")                            | "Provider<Directory>"                       | PropertyLocation.none
+        "snykPath"                       | _                       | _                                                               | null                                                                   | "Provider<Directory>"                       | PropertyLocation.none
         "snykPath"                       | _                       | osPath("/path/to/snyk")                                         | _                                                                      | _                                           | PropertyLocation.environment
         "snykPath"                       | _                       | osPath("/path/to/snyk")                                         | _                                                                      | _                                           | PropertyLocation.property
         "snykPath"                       | toSetter(property)      | osPath("/path/to/snyk")                                         | _                                                                      | "Provider<Directory>"                       | PropertyLocation.script
@@ -582,14 +582,20 @@ class SnykPluginIntegrationSpec extends SnykIntegrationSpec {
         invocation = (method != _) ? "${method}(${escapedValue})" : "${property} = ${escapedValue}"
     }
 
+
     @Unroll("task #dependency runs before SnykTask")
     def "task #dependency runs before SnykTask"() {
         given: "a generic token in order for snykTask to run"
         def snykTaskName = "snykTaskTest"
         buildFile << """
-        project.tasks.register("$snykTaskName", ${SnykTask.name}) {
+        project.tasks.register("$snykTaskName", ${Test.name}) {
             token="anytoken"
         }
+        """
+
+        and: "auto install enabled"
+        buildFile << """
+        snyk.autoDownload = true
         """
 
         when:
@@ -603,7 +609,8 @@ class SnykPluginIntegrationSpec extends SnykIntegrationSpec {
         subjectTaskIndex > dependencyIndex
 
         where:
-        dependency << ["snykInstall"]
+        dependency    | _
+        "snykInstall" | _
     }
 
 

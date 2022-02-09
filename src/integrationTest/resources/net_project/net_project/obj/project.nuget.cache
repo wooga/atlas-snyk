@@ -1,0 +1,10 @@
+{
+  "version": 2,
+  "dgSpecHash": "igq6b0qxlvRSBat3upO3Cdj6y9V8dCoUpoT1o+rb2wSF7BxfCeGVFhL4iWWUHmwOXay7ftvZLL5mRGAKSZRujw==",
+  "success": true,
+  "projectFilePath": "C:\\Repositories\\atlas-snyk\\src\\integrationTest\\resources\\net_project\\net_project\\net_project.csproj",
+  "expectedPackageFiles": [
+    "C:\\Users\\christian.sagel\\.nuget\\packages\\nlog\\4.7.13\\nlog.4.7.13.nupkg.sha512"
+  ],
+  "logs": []
+}

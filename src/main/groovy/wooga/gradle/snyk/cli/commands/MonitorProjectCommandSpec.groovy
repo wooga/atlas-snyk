@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package wooga.gradle.snyk.cli
+package wooga.gradle.snyk.cli.commands
 
 
 import org.gradle.api.provider.ListProperty
@@ -24,8 +24,58 @@ import org.gradle.api.provider.Provider
 import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.Optional
 import org.gradle.api.tasks.options.Option
+import wooga.gradle.OptionMapper
+import wooga.gradle.snyk.cli.BusinessCriticalityOption
+import wooga.gradle.snyk.cli.EnvironmentOption
+import wooga.gradle.snyk.cli.LifecycleOption
+import wooga.gradle.snyk.cli.options.MonitorOption
 
-trait SnykMonitorArgumentsSpec extends SnykTestArgumentSpec {
+/**
+ * Provides properties for the Monitor command (a superset of the {@code TestCommandSpec})
+ */
+trait MonitorProjectCommandSpec extends TestProjectCommandSpec implements OptionMapper<MonitorOption> {
+
+    @Override
+    String getOption(MonitorOption option) {
+        def value = null
+
+        switch (option) {
+            case MonitorOption.trustPolicies:
+                if (trustPolicies.getOrElse(false)){
+                    value = true
+                }
+                break
+
+            case MonitorOption.projectEnvironment:
+                if (projectEnvironment.present){
+                    value = projectEnvironment.get()
+                }
+                break
+
+            case MonitorOption.projectLifecycle:
+                if (projectLifecycle.present){
+                    value = projectLifecycle.get()
+                }
+                break
+
+            case MonitorOption.projectBusinessCriticality:
+                if (projectBusinessCriticality.present){
+                    value = projectBusinessCriticality.get()
+                }
+                break
+
+            case MonitorOption.projectTags:
+                if (projectTags.present){
+                    value = projectTags.get()
+                }
+                break
+        }
+
+        if (value != null){
+            return option.compose(value)
+        }
+        null
+    }
 
     private final Property<Boolean> trustPolicies = objects.property(Boolean)
 
@@ -55,8 +105,8 @@ trait SnykMonitorArgumentsSpec extends SnykTestArgumentSpec {
         projectEnvironment
     }
 
-    void setProjectEnvironment(Iterable<EnvironmentOption> environments) {
-        projectEnvironment.set(environments)
+    void setProjectEnvironment(Iterable<Object> environments) {
+        projectEnvironment.set(environments.collect({ it as EnvironmentOption }))
     }
 
     void setProjectEnvironment(Provider<Iterable<EnvironmentOption>> environments) {
@@ -73,6 +123,10 @@ trait SnykMonitorArgumentsSpec extends SnykTestArgumentSpec {
 
     void projectEnvironment(Iterable<EnvironmentOption> environments) {
         projectEnvironment.addAll(environments)
+    }
+
+    void setProjectEnvironment(String environment) {
+        projectEnvironment.add(environment as EnvironmentOption)
     }
 
     @Option(option = "project-environment", description = """
@@ -98,8 +152,12 @@ trait SnykMonitorArgumentsSpec extends SnykTestArgumentSpec {
         projectLifecycle.set(lifecycle)
     }
 
-    void setProjectLifecycle(Iterable<LifecycleOption> lifecycle) {
-        projectLifecycle.set(lifecycle)
+    void setProjectLifecycle(Iterable<Object> lifecycle) {
+        projectLifecycle.set(lifecycle.collect({ it as LifecycleOption }))
+    }
+
+    void setProjectLifecycle(String lifecycle) {
+        projectLifecycle.add(lifecycle as LifecycleOption)
     }
 
     void projectLifecycle(LifecycleOption lifecycle) {
@@ -136,8 +194,12 @@ trait SnykMonitorArgumentsSpec extends SnykTestArgumentSpec {
         projectBusinessCriticality.set(criticality)
     }
 
-    void setProjectBusinessCriticality(Iterable<BusinessCriticalityOption> criticality) {
-        projectBusinessCriticality.set(criticality)
+    void setProjectBusinessCriticality(Iterable<Object> criticality) {
+        projectBusinessCriticality.set(criticality.collect({ it as BusinessCriticalityOption }))
+    }
+
+    void setProjectBusinessCriticality(String criticality) {
+        projectBusinessCriticality.add(criticality as BusinessCriticalityOption)
     }
 
     void projectBusinessCriticality(BusinessCriticalityOption criticality) {

@@ -16,54 +16,45 @@
 
 package wooga.gradle.snyk
 
+
 import org.gradle.api.provider.Property
 import org.gradle.api.provider.Provider
-import org.gradle.api.tasks.Input
 import wooga.gradle.snyk.cli.CommonArgumentSpec
-import wooga.gradle.snyk.cli.SnykMonitorArgumentsSpec
 import wooga.gradle.snyk.cli.SnykTaskSpec
+import wooga.gradle.snyk.cli.commands.MonitorProjectCommandSpec
 
-trait SnykPluginExtension implements SnykMonitorArgumentsSpec, SnykTaskSpec, CommonArgumentSpec {
-    private final Property<Boolean> autoDownloadSnykCli = objects.property(Boolean)
+trait SnykPluginExtension implements MonitorProjectCommandSpec, SnykTaskSpec, CommonArgumentSpec, SnykInstallSpec {
+    private final Property<Boolean> autoDownload = objects.property(Boolean)
 
-    Property<Boolean> getAutoDownloadSnykCli() {
-        autoDownloadSnykCli
+    /**
+     * @return Whether to auto download the snyk executable if not found
+     */
+    Property<Boolean> getAutoDownload() {
+        autoDownload
     }
 
-    void setAutoDownloadSnykCli(Provider<Boolean> value) {
-        autoDownloadSnykCli.set(value)
+    void setAutoDownload(Provider<Boolean> value) {
+        autoDownload.set(value)
     }
 
-    void setAutoDownloadSnykCli(Boolean value) {
-        autoDownloadSnykCli.set(value)
+    void setAutoDownload(Boolean value) {
+        autoDownload.set(value)
     }
 
-    private final Property<Boolean> autoUpdateSnykCli = objects.property(Boolean)
+    private final Property<Boolean> autoUpdate = objects.property(Boolean)
 
-    Property<Boolean> getAutoUpdateSnykCli() {
-        autoUpdateSnykCli
+    /**
+     * @return Whether to auto update the snyk executable if present
+     */
+    Property<Boolean> getAutoUpdate() {
+        autoUpdate
     }
 
-    void setAutoUpdateSnykCli(Provider<Boolean> value) {
-        autoUpdateSnykCli.set(value)
+    void setAutoUpdate(Provider<Boolean> value) {
+        autoUpdate.set(value)
     }
 
-    void setAutoUpdateSnykCli(Boolean value) {
-        autoUpdateSnykCli.set(value)
-    }
-
-    private final Property<String> snykVersion = objects.property(String)
-
-    @Input
-    Property<String> getSnykVersion() {
-        snykVersion
-    }
-
-    void setSnykVersion(Provider<String> value) {
-        snykVersion.set(value)
-    }
-
-    void setSnykVersion(String value) {
-        snykVersion.set(value)
+    void setAutoUpdate(Boolean value) {
+        autoUpdate.set(value)
     }
 }
