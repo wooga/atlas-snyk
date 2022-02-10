@@ -16,6 +16,7 @@
 
 package wooga.gradle.snyk.tasks
 
+
 import org.gradle.api.Action
 import org.gradle.api.DefaultTask
 import org.gradle.api.file.RegularFile
@@ -29,7 +30,7 @@ import org.gradle.process.ExecResult
 import org.gradle.process.ExecSpec
 import wooga.gradle.OptionAggregator
 import wooga.gradle.snyk.SnykActionSpec
-import wooga.gradle.snyk.cli.SnykExitCode
+import wooga.gradle.snyk.cli.SnykExecutionException
 import wooga.gradle.snyk.cli.SnykTaskSpec
 import wooga.gradle.snyk.internal.ArgumentsSpec
 
@@ -81,6 +82,7 @@ abstract class SnykTask extends DefaultTask
                     executable _executable
                     args = _arguments
                     ignoreExitValue = true
+
                     // Optional working directory
                     if (_workingDir != null) {
                         workingDir(_workingDir)
@@ -97,7 +99,7 @@ abstract class SnykTask extends DefaultTask
         args
     }
 
-    protected void handleExitCode(int code) {
+    static void handleExitCode(int exitValue) {
         /*
             Possible exit codes and their meaning:
                 0: success, no vulnerabilities found
@@ -105,7 +107,10 @@ abstract class SnykTask extends DefaultTask
                 2: failure, try to re-run command
                 3: failure, no supported projects detected\
          */
-        SnykExitCode testExitCode = SnykExitCode.values()[code]
-        logger.info(testExitCode.message)
+        if (exitValue != 0) {
+            throw new SnykExecutionException(exitValue)
+        }
     }
 }
+
+
