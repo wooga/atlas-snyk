@@ -34,16 +34,6 @@ abstract class SnykCheckBaseIntegrationSpec<T extends SnykTask> extends SnykTask
 
     abstract String getCommandName()
 
-    void setSnykWrapper() {
-        def snykWrapper = generateBatchWrapper("snyk-wrapper")
-        def wrapperDir = snykWrapper.parent
-        def wrapperPath = escapedPath(wrapperDir)
-        buildFile << """
-        ${extensionName}.executableName=${wrapValueBasedOnType(snykWrapper.name, String)}
-        ${extensionName}.snykPath=${wrapValueBasedOnType(wrapperPath, Directory)}
-        """.stripIndent()
-    }
-
     @Unroll("can set property #property with cli option #cliOption")
     def "can set property via cli option"() {
         given: "a task to read back the value"
@@ -464,43 +454,5 @@ abstract class SnykCheckBaseIntegrationSpec<T extends SnykTask> extends SnykTask
 
     String wrap(String value) {
         wrapValueBasedOnType(value, String)
-    }
-
-    protected static File generateBatchWrapper(String fileName, Boolean printEnvironment = false, File baseDirectory = null) {
-        File wrapper
-
-        wrapper = Files.createTempFile(fileName, ".bat").toFile()
-        wrapper.deleteOnExit()
-        wrapper.executable = true
-        if (PlatformUtils.windows) {
-            wrapper << """
-                    @echo off
-                    echo [ARGUMENTS]:
-                    echo %*
-                """.stripIndent()
-
-            if (printEnvironment) {
-                wrapper << """
-                    echo [ENVIRONMENT]:
-                    set
-                """.stripIndent()
-            }
-
-        } else {
-            wrapper << """
-                    #!/usr/bin/env bash
-                    echo [ARGUMENTS]:
-                    echo \$@
-                """.stripIndent()
-
-            if (printEnvironment) {
-                wrapper << """
-                    echo [ENVIRONMENT]:
-                    env
-                """.stripIndent()
-            }
-        }
-
-        wrapper
     }
 }

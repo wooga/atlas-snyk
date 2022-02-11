@@ -61,6 +61,7 @@ abstract class SnykTask extends DefaultTask
 
     SnykTask() {
         arguments.set(project.provider({ composeArguments() }))
+        outputs.upToDateWhen { false}
     }
 
     @TaskAction
