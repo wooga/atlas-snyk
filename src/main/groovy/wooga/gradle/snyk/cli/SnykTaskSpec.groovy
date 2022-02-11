@@ -43,21 +43,6 @@ trait SnykTaskSpec extends CommonArgumentSpec {
         token.set(value)
     }
 
-    private final RegularFileProperty logFile = objects.fileProperty()
-
-    @Internal
-    RegularFileProperty getLogFile() {
-        logFile
-    }
-
-    void setLogFile(Provider<RegularFile> value) {
-        logFile.set(value)
-    }
-
-    void setLogFile(File value) {
-        logFile.set(value)
-    }
-
     private final Property<String> executableName = objects.property(String)
 
     /**

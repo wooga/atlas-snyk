@@ -53,7 +53,7 @@ class TestIntegrationSpec extends SnykCheckBaseIntegrationSpec<Test> {
         }
 
         when:
-        def result = runTasksSuccessfully(subjectUnderTestName)
+        def result = runTasks(subjectUnderTestName)
 
         then:
         outputContains(result, Test.composeStartMessage(projectDir.path)) || outputContains(result, Test.debugStartMessage)
@@ -79,7 +79,7 @@ class TestIntegrationSpec extends SnykCheckBaseIntegrationSpec<Test> {
         buildFile << "\n${subjectUnderTestName}.allSubProjects=true"
 
         when:
-        def result = runTasksSuccessfully(subjectUnderTestName)
+        def result = runTasks(subjectUnderTestName)
 
         then:
         outputContains(result, Test.composeStartMessage(projectDir.path)) || outputContains(result, Test.debugStartMessage)
