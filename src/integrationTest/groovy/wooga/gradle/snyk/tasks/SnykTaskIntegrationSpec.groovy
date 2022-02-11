@@ -16,14 +16,18 @@
 
 package wooga.gradle.snyk.tasks
 
+import com.wooga.gradle.PlatformUtils
 import com.wooga.gradle.test.GradleSpecUtils
 import com.wooga.gradle.test.PropertyQueryTaskWriter
+import org.gradle.api.file.Directory
 import spock.lang.Unroll
 import wooga.gradle.snyk.SnykIntegrationSpec
 import wooga.gradle.snyk.SnykPlugin
 
 import java.lang.reflect.ParameterizedType
+import java.nio.file.Files
 
+import static com.wooga.gradle.PlatformUtils.escapedPath
 import static com.wooga.gradle.test.PropertyUtils.toProviderSet
 import static com.wooga.gradle.test.PropertyUtils.toSetter
 
@@ -59,6 +63,61 @@ abstract class SnykTaskIntegrationSpec<T extends SnykTask> extends SnykIntegrati
         
         task $subjectUnderTestName(type: ${subjectUnderTestTypeName})
         """.stripIndent()
+    }
+
+    protected static File generateBatchWrapper(String fileName, Boolean printEnvironment = false) {
+        File wrapper
+
+        wrapper = Files.createTempFile(fileName, ".bat").toFile()
+        wrapper.deleteOnExit()
+        wrapper.executable = true
+        if (PlatformUtils.windows) {
+            wrapper << """
+                    @echo off
+                    echo [ARGUMENTS]:
+                    echo %*
+                """.stripIndent()
+
+            if (printEnvironment) {
+                wrapper << """
+                    echo [ENVIRONMENT]:
+                    set
+                """.stripIndent()
+            }
+
+        } else {
+            wrapper << """
+                    #!/usr/bin/env bash
+                    echo [ARGUMENTS]:
+                    echo \$@
+                """.stripIndent()
+
+            if (printEnvironment) {
+                wrapper << """
+                    echo [ENVIRONMENT]:
+                    env
+                """.stripIndent()
+            }
+        }
+
+        wrapper
+    }
+
+    void setSnykWrapper(Boolean setDummyToken = true) {
+        def snykWrapper = generateBatchWrapper("snyk-wrapper")
+        def wrapperDir = snykWrapper.parent
+        def wrapperPath = escapedPath(wrapperDir)
+
+        buildFile << """
+        ${extensionName}.executableName=${wrapValueBasedOnType(snykWrapper.name, String)}
+        ${extensionName}.snykPath=${wrapValueBasedOnType(wrapperPath, Directory)}
+        """.stripIndent()
+
+        if (setDummyToken){
+            buildFile << """
+        ${extensionName}.token=${wrapValueBasedOnType("foobar", String)}
+        """.stripIndent()
+        }
     }
 
     @Unroll("can set property #property with cli option #cliOption")
@@ -139,6 +198,22 @@ abstract class SnykTaskIntegrationSpec<T extends SnykTask> extends SnykIntegrati
         "debug"          | toSetter(property)      | false                        | _           | "Provider<Boolean>"
         value = wrapValueBasedOnType(rawValue, type, wrapValueFallback)
         expectedValue = returnValue == _ ? rawValue : returnValue
+    }
+
+    def "task is never up to date"() {
+
+        given: "a set snyk wrapper"
+        setSnykWrapper()
+
+        when:
+        def firstRun = runTasks(subjectUnderTestName)
+        def secondRun  = runTasks(subjectUnderTestName)
+
+        then:
+        firstRun.success
+        !firstRun.wasUpToDate(subjectUnderTestName)
+        secondRun.success
+        !secondRun.wasUpToDate(subjectUnderTestName)
     }
 
 
