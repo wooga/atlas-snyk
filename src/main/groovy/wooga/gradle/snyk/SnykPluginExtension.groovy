@@ -23,7 +23,12 @@ import wooga.gradle.snyk.cli.CommonArgumentSpec
 import wooga.gradle.snyk.cli.SnykTaskSpec
 import wooga.gradle.snyk.cli.commands.MonitorProjectCommandSpec
 
-trait SnykPluginExtension implements MonitorProjectCommandSpec, SnykTaskSpec, CommonArgumentSpec, SnykInstallSpec {
+trait SnykPluginExtension implements
+        MonitorProjectCommandSpec,
+        SnykTaskSpec,
+        CommonArgumentSpec,
+        SnykInstallSpec,
+        SnykStrategySpec {
     private final Property<Boolean> autoDownload = objects.property(Boolean)
 
     /**

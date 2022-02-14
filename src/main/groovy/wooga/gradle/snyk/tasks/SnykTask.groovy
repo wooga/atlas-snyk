@@ -91,6 +91,7 @@ abstract class SnykTask extends DefaultTask
                 }
             }
         })
+
         handleExitCode(execResult.exitValue)
     }
 

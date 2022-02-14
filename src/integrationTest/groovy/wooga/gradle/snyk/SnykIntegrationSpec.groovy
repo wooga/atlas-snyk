@@ -16,9 +16,14 @@
 
 package wooga.gradle.snyk
 
+import com.wooga.gradle.PlatformUtils
 import com.wooga.gradle.test.IntegrationSpec
+import org.gradle.api.file.Directory
 import wooga.gradle.snyk.cli.*
 
+import java.nio.file.Files
+
+import static com.wooga.gradle.PlatformUtils.escapedPath
 import static com.wooga.gradle.PlatformUtils.getUnixUserHomePath
 
 class SnykIntegrationSpec extends IntegrationSpec {
@@ -78,5 +83,53 @@ class SnykIntegrationSpec extends IntegrationSpec {
             gradleUserHomeEnv = "${getUnixUserHomePath()}/.gradle"
         }
         new File(gradleUserHomeEnv)
+    }
+
+    protected static File generateBatchWrapper(String fileName, Boolean printEnvironment = false, File baseDirectory = null) {
+        File wrapper
+
+        wrapper = Files.createTempFile(fileName, ".bat").toFile()
+        wrapper.deleteOnExit()
+        wrapper.executable = true
+        if (PlatformUtils.windows) {
+            wrapper << """
+                    @echo off
+                    echo [ARGUMENTS]:
+                    echo %*
+                """.stripIndent()
+
+            if (printEnvironment) {
+                wrapper << """
+                    echo [ENVIRONMENT]:
+                    set
+                """.stripIndent()
+            }
+
+        } else {
+            wrapper << """
+                    #!/usr/bin/env bash
+                    echo [ARGUMENTS]:
+                    echo \$@
+                """.stripIndent()
+
+            if (printEnvironment) {
+                wrapper << """
+                    echo [ENVIRONMENT]:
+                    env
+                """.stripIndent()
+            }
+        }
+
+        wrapper
+    }
+
+    void setSnykWrapper() {
+        def snykWrapper = generateBatchWrapper("snyk-wrapper")
+        def wrapperDir = snykWrapper.parent
+        def wrapperPath = escapedPath(wrapperDir)
+        buildFile << """
+        ${extensionName}.executableName=${wrapValueBasedOnType(snykWrapper.name, String)}
+        ${extensionName}.snykPath=${wrapValueBasedOnType(wrapperPath, Directory)}
+        """.stripIndent()
     }
 }

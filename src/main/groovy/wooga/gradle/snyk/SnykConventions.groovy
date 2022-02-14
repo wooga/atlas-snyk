@@ -308,4 +308,22 @@ class SnykConventions {
             null
     )
 
+    static final PropertyLookup strategies = new PropertyLookup(
+            "SNYK_STRATEGIES",
+            "snyk.strategies",
+            null
+    )
+
+    static final PropertyLookup checkTaskName = new PropertyLookup(
+            "SNYK_CHECK_TASK_NAME",
+            "snyk.checkTaskName",
+            "check"
+    )
+
+    static final PropertyLookup publishTaskName = new PropertyLookup(
+            "SNYK_PUBLISH_TASK_NAME",
+            "snyk.publishTaskName",
+            "publish"
+    )
+
 }
