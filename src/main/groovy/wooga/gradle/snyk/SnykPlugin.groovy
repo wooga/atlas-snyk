@@ -49,18 +49,24 @@ class SnykPlugin implements Plugin<Project> {
     @Override
     void apply(Project project) {
         def tasks = project.tasks
+
         // Create the extension
         def extension = createAndConfigureExtension(project)
+
         // Map the base task properties common to all snyk tasks
         mapExtensionPropertiesToBaseTask(extension, project)
-        // Map the properties specific to certain tasks
+
+        // Map the properties specific to concrete tasks
         tasks.withType(Test).configureEach {
             mapExtensionPropertiesToTestTask(it, extension)
+            // TODO: Move back into method once `snyk monitor` supports it
+            it.jsonOutputPath.convention(extension.jsonOutputPath)
         }
         tasks.withType(Monitor).configureEach {
             mapExtensionPropertiesToTestTask(it, extension)
             mapExtensionPropertiesToMonitorTask(it, extension)
         }
+
         // Register an install task (to be used to install the snyk binary if need be)
         registerSnykTasks(project, extension)
     }
@@ -213,7 +219,6 @@ class SnykPlugin implements Plugin<Project> {
         task.targetReference.convention(extension.targetReference)
         task.policyPath.convention(extension.policyPath)
         task.printJson.convention(extension.printJson)
-        task.jsonOutputPath.convention(extension.jsonOutputPath)
         task.printSarif.convention(extension.printSarif)
         task.sarifOutputPath.convention(extension.sarifOutputPath)
         task.severityThreshold.convention(extension.severityThreshold)
