@@ -18,8 +18,11 @@ package wooga.gradle.snyk
 
 import org.gradle.api.Plugin
 import org.gradle.api.Project
+import org.gradle.api.Task
 import org.gradle.api.logging.LogLevel
 import org.gradle.api.logging.Logging
+import org.gradle.api.tasks.TaskCollection
+import org.gradle.api.tasks.TaskProvider
 import org.slf4j.Logger
 import wooga.gradle.snyk.cli.*
 import wooga.gradle.snyk.cli.commands.MonitorProjectCommandSpec
@@ -38,6 +41,10 @@ class SnykPlugin implements Plugin<Project> {
     static String INSTALL_TASK_NAME = "snykInstall"
     static String TEST_TASK_NAME = "snykTest"
     static String MONITOR_TASK_NAME = "snykMonitor"
+
+    static final String MONITOR_CHECK = "monitor_check"
+    static final String TEST_CHECK = "test_check"
+    static final String MONITOR_PUBLISH = "monitor_publish"
 
     @Override
     void apply(Project project) {
@@ -164,7 +171,16 @@ class SnykPlugin implements Plugin<Project> {
         extension.initScript.convention(SnykConventions.initScript.getFileValueProvider(project))
         extension.skipUnresolved.convention(SnykConventions.skipUnresolved.getBooleanValueProvider(project))
         extension.yarnWorkspaces.convention(SnykConventions.yarnWorkspaces.getBooleanValueProvider(project))
+
+        extension.strategies.convention(SnykConventions.strategies.getStringValueProvider(project).map({
+            it.split(",").collect({ it.trim() })
+        }))
+
+        extension.checkTaskName.convention(SnykConventions.checkTaskName.getStringValueProvider(project))
+        extension.publishTaskName.convention(SnykConventions.publishTaskName.getStringValueProvider(project))
+
         extension
+
     }
 
     private static mapExtensionPropertiesToBaseTask(extension, project) {
@@ -244,9 +260,30 @@ class SnykPlugin implements Plugin<Project> {
         }
 
         project.tasks.withType(SnykTask).configureEach {
-            dependsOn(extension.autoDownload.flatMap({
-                it ? snykInstall : project.tasks.register("snykCalibrate")
-            }))
+            if (extension.autoUpdate.get()) {
+                it.dependsOn(snykInstall)
+            }
         }
+
+        project.afterEvaluate {
+            def strategy = extension.strategies.getOrElse([])
+            if (strategy.size() > 0) {
+                if (strategy.contains(MONITOR_PUBLISH)) {
+                    hookSnykTask(project.tasks.withType(Monitor), project.tasks.named(extension.publishTaskName.get()))
+                }
+                if (strategy.contains(MONITOR_CHECK)) {
+                    hookSnykTask(project.tasks.withType(Monitor), project.tasks.named(extension.checkTaskName.get()))
+                }
+                if (strategy.contains(TEST_CHECK)) {
+                    hookSnykTask(project.tasks.withType(Test), project.tasks.named(extension.checkTaskName.get()))
+                }
+            }
+        }
+    }
+
+    private static void hookSnykTask(TaskCollection<Task> snykTasks, TaskProvider<Task> baseTask) {
+        baseTask.configure({
+            it.dependsOn(snykTasks)
+        })
     }
 }

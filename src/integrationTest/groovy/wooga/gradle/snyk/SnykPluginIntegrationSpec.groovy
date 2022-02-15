@@ -23,7 +23,6 @@ import com.wooga.gradle.test.PropertyQueryTaskWriter
 import spock.lang.Unroll
 import wooga.gradle.snyk.cli.*
 import wooga.gradle.snyk.tasks.Monitor
-import wooga.gradle.snyk.tasks.SnykTask
 import wooga.gradle.snyk.tasks.Test
 
 import static com.wooga.gradle.test.PropertyUtils.*

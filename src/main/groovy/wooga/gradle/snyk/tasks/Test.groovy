@@ -16,7 +16,6 @@
 
 package wooga.gradle.snyk.tasks
 
-
 import wooga.gradle.snyk.cli.commands.TestProjectCommandSpec
 import wooga.gradle.snyk.cli.options.ProjectOption
 import wooga.gradle.snyk.cli.options.TestOption

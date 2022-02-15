@@ -64,5 +64,4 @@ class SnykPluginSpec extends ProjectSpec {
         extensionName | extensionType
         'snyk'        | SnykPluginExtension
     }
-
 }

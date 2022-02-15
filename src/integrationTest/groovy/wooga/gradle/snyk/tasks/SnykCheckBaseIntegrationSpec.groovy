@@ -16,15 +16,12 @@
 
 package wooga.gradle.snyk.tasks
 
-import com.wooga.gradle.PlatformUtils
+
 import com.wooga.gradle.test.PropertyQueryTaskWriter
-import org.gradle.api.file.Directory
 import spock.lang.Unroll
 import wooga.gradle.snyk.cli.FailOnOption
 import wooga.gradle.snyk.cli.SeverityThresholdOption
 import wooga.gradle.snyk.cli.VulnerablePathsOption
-
-import java.nio.file.Files
 
 import static com.wooga.gradle.PlatformUtils.escapedPath
 import static com.wooga.gradle.test.PropertyUtils.toProviderSet
