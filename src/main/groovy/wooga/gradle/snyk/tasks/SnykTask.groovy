@@ -16,15 +16,14 @@
 
 package wooga.gradle.snyk.tasks
 
-
+import com.wooga.gradle.ArgumentsSpec
+import com.wooga.gradle.io.FileUtils
+import com.wooga.gradle.io.LogFileSpec
+import com.wooga.gradle.io.OutputStreamSpec
 import org.gradle.api.Action
 import org.gradle.api.DefaultTask
-import org.gradle.api.file.RegularFile
-import org.gradle.api.file.RegularFileProperty
-import org.gradle.api.provider.Provider
 import org.gradle.api.provider.ProviderFactory
 import org.gradle.api.tasks.Internal
-import org.gradle.api.tasks.OutputFile
 import org.gradle.api.tasks.TaskAction
 import org.gradle.process.ExecResult
 import org.gradle.process.ExecSpec
@@ -32,48 +31,40 @@ import wooga.gradle.OptionAggregator
 import wooga.gradle.snyk.SnykActionSpec
 import wooga.gradle.snyk.cli.SnykExecutionException
 import wooga.gradle.snyk.cli.SnykTaskSpec
-import wooga.gradle.snyk.internal.ArgumentsSpec
 
 abstract class SnykTask extends DefaultTask
-        implements SnykActionSpec, SnykTaskSpec, ArgumentsSpec, OptionAggregator {
+        implements SnykActionSpec, SnykTaskSpec,
+                ArgumentsSpec,
+                LogFileSpec,
+                OutputStreamSpec,
+                OptionAggregator {
 
     @Internal
     ProviderFactory getProviderFactory() {
         getProviders()
     }
 
-    private final RegularFileProperty logFile = project.objects.fileProperty()
-
-    @OutputFile
-    RegularFileProperty getLogFile() {
-        logFile
-    }
-
-    void setLogFile(Provider<RegularFile> value) {
-        logFile.set(value)
-    }
-
-    void setLogFile(File value) {
-        logFile.set(value)
-    }
-
     abstract void addMainOptions(List<String> args)
 
     SnykTask() {
-        arguments.set(project.provider({ composeArguments() }))
-        outputs.upToDateWhen { false}
+        internalArguments = project.provider({ composeArguments() })
+        outputs.upToDateWhen { false }
     }
 
     @TaskAction
     protected void exec() {
 
-        def _arguments = getAllArguments()
+        def _arguments = arguments.get()
         def _workingDir = workingDirectory.getOrNull()
         def _executable
         if (snykPath.present) {
             _executable = snykPath.file(executableName).get().asFile.path
         } else {
             _executable = executableName.get()
+        }
+
+        if (logFile.present){
+            FileUtils.ensureFile(logFile)
         }
 
         ExecResult execResult = project.exec(new Action<ExecSpec>() {
@@ -83,6 +74,8 @@ abstract class SnykTask extends DefaultTask
                     executable _executable
                     args = _arguments
                     ignoreExitValue = true
+                    standardOutput = getOutputStream(logFile.get().asFile)
+                    errorOutput = getOutputStream(logFile.get().asFile)
 
                     // Optional working directory
                     if (_workingDir != null) {
