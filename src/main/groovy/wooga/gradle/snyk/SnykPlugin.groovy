@@ -185,6 +185,7 @@ class SnykPlugin implements Plugin<Project> {
 
     private static mapExtensionPropertiesToBaseTask(extension, project) {
         project.tasks.withType(SnykTask).configureEach {
+            it.logToStdout.convention(it.logger.infoEnabled)
             it.workingDirectory.convention(extension.workingDirectory)
             it.executableName.convention(extension.executableName)
             it.snykPath.convention(extension.snykPath)
