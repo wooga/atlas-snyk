@@ -113,7 +113,7 @@ trait ProjectCommandSpec extends BaseSpec implements OptionMapper<ProjectOption>
                 break
 
             case ProjectOption.configurationAttributes:
-                if (configurationAttributes.present) {
+                if (configurationAttributes.present && !configurationAttributes.get().isEmpty()) {
                     value = configurationAttributes.get()
                 }
                 break

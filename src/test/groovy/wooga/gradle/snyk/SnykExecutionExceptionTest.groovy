@@ -20,7 +20,7 @@ class SnykExecutionExceptionTest extends Specification {
     }
 
     @Unroll
-    def "handles failure exit code correctly"() {
+    def "handles failure exit '#exitCode' code correctly"() {
 
         when:
         SnykTask.handleExitCode(exitCode)

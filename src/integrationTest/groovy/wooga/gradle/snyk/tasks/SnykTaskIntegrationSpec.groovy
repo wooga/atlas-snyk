@@ -59,7 +59,6 @@ abstract class SnykTaskIntegrationSpec<T extends SnykTask> extends SnykIntegrati
 
     def setup() {
         buildFile << """
-        ${applyPlugin(SnykPlugin)}
         
         task $subjectUnderTestName(type: ${subjectUnderTestTypeName})
         """.stripIndent()
@@ -103,19 +102,19 @@ abstract class SnykTaskIntegrationSpec<T extends SnykTask> extends SnykIntegrati
         wrapper
     }
 
-    void setSnykWrapper(Boolean setDummyToken = true) {
+    void setSnykWrapper(Boolean setDummyToken = true, String object = extensionName) {
         def snykWrapper = generateBatchWrapper("snyk-wrapper")
         def wrapperDir = snykWrapper.parent
         def wrapperPath = escapedPath(wrapperDir)
 
         buildFile << """
-        ${extensionName}.executableName=${wrapValueBasedOnType(snykWrapper.name, String)}
-        ${extensionName}.snykPath=${wrapValueBasedOnType(wrapperPath, Directory)}
+        ${object}.executableName=${wrapValueBasedOnType(snykWrapper.name, String)}
+        ${object}.snykPath=${wrapValueBasedOnType(wrapperPath, Directory)}
         """.stripIndent()
 
         if (setDummyToken){
             buildFile << """
-        ${extensionName}.token=${wrapValueBasedOnType("foobar", String)}
+        ${object}.token=${wrapValueBasedOnType("foobar", String)}
         """.stripIndent()
         }
     }
@@ -203,7 +202,7 @@ abstract class SnykTaskIntegrationSpec<T extends SnykTask> extends SnykIntegrati
     def "task is never up to date"() {
 
         given: "a set snyk wrapper"
-        setSnykWrapper()
+        setSnykWrapper(true, subjectUnderTestName)
 
         when:
         def firstRun = runTasks(subjectUnderTestName)
