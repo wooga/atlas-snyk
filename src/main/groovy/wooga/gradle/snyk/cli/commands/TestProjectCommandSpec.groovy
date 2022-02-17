@@ -62,7 +62,7 @@ trait TestProjectCommandSpec extends ProjectCommandSpec implements OptionMapper<
                 break
 
             case TestOption.exclude:
-                if (exclude.present) {
+                if (exclude.present && !exclude.get().isEmpty()) {
                     value = exclude.get()
                 }
                 break

@@ -131,7 +131,7 @@ class MonitorIntegrationSpec extends SnykCheckBaseIntegrationSpec<Monitor> {
     def "composes correct CLI string from setters #setters -> #expected"() {
 
         given: "a snyk wrapper"
-        setSnykWrapper()
+        setSnykWrapper(true, subjectUnderTestName)
 
         and: "a set of properties being set onto the task"
         buildFile << "\n${subjectUnderTestName}.${prop}"

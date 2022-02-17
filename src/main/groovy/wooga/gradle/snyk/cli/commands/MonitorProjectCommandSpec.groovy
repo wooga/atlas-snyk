@@ -47,25 +47,25 @@ trait MonitorProjectCommandSpec extends TestProjectCommandSpec implements Option
                 break
 
             case MonitorOption.projectEnvironment:
-                if (projectEnvironment.present){
+                if (projectEnvironment.present && !projectEnvironment.get().isEmpty()){
                     value = projectEnvironment.get()
                 }
                 break
 
             case MonitorOption.projectLifecycle:
-                if (projectLifecycle.present){
+                if (projectLifecycle.present && !projectLifecycle.get().isEmpty()){
                     value = projectLifecycle.get()
                 }
                 break
 
             case MonitorOption.projectBusinessCriticality:
-                if (projectBusinessCriticality.present){
+                if (projectBusinessCriticality.present && !projectBusinessCriticality.get().isEmpty()){
                     value = projectBusinessCriticality.get()
                 }
                 break
 
             case MonitorOption.projectTags:
-                if (projectTags.present){
+                if (projectTags.present && !projectTags.get().isEmpty()){
                     value = projectTags.get()
                 }
                 break

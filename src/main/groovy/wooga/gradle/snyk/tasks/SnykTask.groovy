@@ -70,12 +70,13 @@ abstract class SnykTask extends DefaultTask
         ExecResult execResult = project.exec(new Action<ExecSpec>() {
             @Override
             void execute(ExecSpec exec) {
+
                 exec.with {
                     executable _executable
                     args = _arguments
                     ignoreExitValue = true
-                    standardOutput = getOutputStream(logFile.get().asFile)
-                    errorOutput = getOutputStream(logFile.get().asFile)
+                    standardOutput = getOutputStream(logFile.asFile.getOrNull())
+                    errorOutput = getOutputStream(logFile.asFile.getOrNull())
 
                     // Optional working directory
                     if (_workingDir != null) {

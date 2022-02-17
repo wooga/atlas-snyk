@@ -381,7 +381,7 @@ abstract class SnykCheckBaseIntegrationSpec<T extends SnykTask> extends SnykTask
     def "composes correct CLI string from #setter -> #expected"() {
 
         given: "a snyk wrapper"
-        setSnykWrapper()
+        setSnykWrapper(true, subjectUnderTestName)
 
         and: "a set of properties being set onto the task"
         if (setter.concat("file")){
