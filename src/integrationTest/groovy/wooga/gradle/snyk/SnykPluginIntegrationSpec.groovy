@@ -23,6 +23,7 @@ import com.wooga.gradle.test.PropertyQueryTaskWriter
 import spock.lang.Unroll
 import wooga.gradle.snyk.cli.*
 import wooga.gradle.snyk.tasks.Monitor
+import wooga.gradle.snyk.tasks.Report
 import wooga.gradle.snyk.tasks.Test
 
 import static com.wooga.gradle.test.PropertyUtils.*
@@ -53,7 +54,7 @@ class SnykPluginIntegrationSpec extends SnykIntegrationSpec {
         """.stripIndent()
 
         when:
-        def query = new PropertyQueryTaskWriter("${subjectUnderTestName}.${property}")
+        def query = new PropertyQueryTaskWriter("${subjectUnderTestName}.${property}", invocation == _ ? ".getOrNull()" : invocation)
         query.write(buildFile)
         def result = runTasksSuccessfully(query.taskName)
 
@@ -61,101 +62,106 @@ class SnykPluginIntegrationSpec extends SnykIntegrationSpec {
         query.matches(result, testValue)
 
         where:
-        taskType | property                         | rawValue                             | type                              | conventionSource                                    | expectedValue
-        Test     | "allProjects"                    | true                                 | "Boolean"                         | ConventionSource.extension(extensionName, property) | _
-        Monitor  | "allProjects"                    | true                                 | "Boolean"                         | ConventionSource.extension(extensionName, property) | _
-        Test     | "detectionDepth"                 | 22                                   | "Integer"                         | ConventionSource.extension(extensionName, property) | _
-        Monitor  | "detectionDepth"                 | 45                                   | "Integer"                         | ConventionSource.extension(extensionName, property) | _
-        Test     | "exclude"                        | [osPath('/path/exclude1')]           | "List<File>"                      | ConventionSource.extension(extensionName, property) | _
-        Monitor  | "exclude"                        | [osPath('/path/exclude2')]           | "List<File>"                      | ConventionSource.extension(extensionName, property) | _
-        Test     | "pruneRepeatedSubDependencies"   | true                                 | "Boolean"                         | ConventionSource.extension(extensionName, property) | _
-        Monitor  | "pruneRepeatedSubDependencies"   | true                                 | "Boolean"                         | ConventionSource.extension(extensionName, property) | _
-        Test     | "printDependencies"              | true                                 | "Boolean"                         | ConventionSource.extension(extensionName, property) | _
-        Monitor  | "printDependencies"              | true                                 | "Boolean"                         | ConventionSource.extension(extensionName, property) | _
-        Test     | "remoteRepoUrl"                  | "http://remote/url1"                 | "String"                          | ConventionSource.extension(extensionName, property) | _
-        Monitor  | "remoteRepoUrl"                  | "http://remote/url2"                 | "String"                          | ConventionSource.extension(extensionName, property) | _
-        Test     | "includeDevelopmentDependencies" | true                                 | "Boolean"                         | ConventionSource.extension(extensionName, property) | _
-        Monitor  | "includeDevelopmentDependencies" | true                                 | "Boolean"                         | ConventionSource.extension(extensionName, property) | _
-        Test     | "orgName"                        | "org1"                               | "String"                          | ConventionSource.extension(extensionName, property) | _
-        Monitor  | "orgName"                        | "org1"                               | "String"                          | ConventionSource.extension(extensionName, property) | _
-        Test     | "packageFile"                    | osPath("/path/to/package1")          | "RegularFile"                     | ConventionSource.extension(extensionName, property) | _
-        Monitor  | "packageFile"                    | osPath("/path/to/package2")          | "RegularFile"                     | ConventionSource.extension(extensionName, property) | _
-        Test     | "ignorePolicy"                   | true                                 | "Boolean"                         | ConventionSource.extension(extensionName, property) | _
-        Monitor  | "ignorePolicy"                   | true                                 | "Boolean"                         | ConventionSource.extension(extensionName, property) | _
-        Test     | "showVulnerablePaths"            | VulnerablePathsOption.some           | "VulnerablePathsOption"           | ConventionSource.extension(extensionName, property) | _
-        Monitor  | "showVulnerablePaths"            | VulnerablePathsOption.all            | "VulnerablePathsOption"           | ConventionSource.extension(extensionName, property) | _
-        Test     | "projectName"                    | "project1"                           | "String"                          | ConventionSource.extension(extensionName, property) | _
-        Monitor  | "projectName"                    | "project1"                           | "String"                          | ConventionSource.extension(extensionName, property) | _
-        Test     | "targetReference"                | "reference1"                         | "String"                          | ConventionSource.extension(extensionName, property) | _
-        Monitor  | "targetReference"                | "reference1"                         | "String"                          | ConventionSource.extension(extensionName, property) | _
-        Test     | "policyPath"                     | osPath("/path/to/policy1")           | "RegularFile"                     | ConventionSource.extension(extensionName, property) | _
-        Monitor  | "policyPath"                     | osPath("/path/to/policy2")           | "RegularFile"                     | ConventionSource.extension(extensionName, property) | _
-        Test     | "printJson"                      | true                                 | "Boolean"                         | ConventionSource.extension(extensionName, property) | _
-        Monitor  | "printJson"                      | true                                 | "Boolean"                         | ConventionSource.extension(extensionName, property) | _
-        Test     | "jsonOutputPath"                 | osPath("/path/to/json1")             | "RegularFile"                     | ConventionSource.extension(extensionName, property) | _
-        Monitor  | "jsonOutputPath"                 | osPath("/path/to/json2")             | "RegularFile"                     | ConventionSource.extension(extensionName, property) | _
-        Test     | "printSarif"                     | true                                 | "Boolean"                         | ConventionSource.extension(extensionName, property) | _
-        Monitor  | "printSarif"                     | true                                 | "Boolean"                         | ConventionSource.extension(extensionName, property) | _
-        Test     | "sarifOutputPath"                | osPath("/path/to/sarif1")            | "RegularFile"                     | ConventionSource.extension(extensionName, property) | _
-        Monitor  | "sarifOutputPath"                | osPath("/path/to/sarif2")            | "RegularFile"                     | ConventionSource.extension(extensionName, property) | _
-        Test     | "severityThreshold"              | SeverityThresholdOption.critical     | "SeverityThresholdOption"         | ConventionSource.extension(extensionName, property) | _
-        Monitor  | "severityThreshold"              | SeverityThresholdOption.low          | "SeverityThresholdOption"         | ConventionSource.extension(extensionName, property) | _
-        Test     | "failOn"                         | FailOnOption.all                     | "FailOnOption"                    | ConventionSource.extension(extensionName, property) | _
-        Monitor  | "failOn"                         | FailOnOption.upgradable              | "FailOnOption"                    | ConventionSource.extension(extensionName, property) | _
-        Test     | "compilerArguments"              | ['--flag1']                          | "List<String>"                    | ConventionSource.extension(extensionName, property) | _
-        Monitor  | "compilerArguments"              | ['--flag2']                          | "List<String>"                    | ConventionSource.extension(extensionName, property) | _
+        taskType | property                         | rawValue                             | type                              | conventionSource                                                 | invocation || expectedValue
+        Test     | "allProjects"                    | true                                 | "Boolean"                         | ConventionSource.extension(extensionName, property)              | _          || _
+        Monitor  | "allProjects"                    | true                                 | "Boolean"                         | ConventionSource.extension(extensionName, property)              | _          || _
+        Test     | "detectionDepth"                 | 22                                   | "Integer"                         | ConventionSource.extension(extensionName, property)              | _          || _
+        Monitor  | "detectionDepth"                 | 45                                   | "Integer"                         | ConventionSource.extension(extensionName, property)              | _          || _
+        Test     | "exclude"                        | [osPath('/path/exclude1')]           | "List<File>"                      | ConventionSource.extension(extensionName, property)              | _          || _
+        Monitor  | "exclude"                        | [osPath('/path/exclude2')]           | "List<File>"                      | ConventionSource.extension(extensionName, property)              | _          || _
+        Test     | "pruneRepeatedSubDependencies"   | true                                 | "Boolean"                         | ConventionSource.extension(extensionName, property)              | _          || _
+        Monitor  | "pruneRepeatedSubDependencies"   | true                                 | "Boolean"                         | ConventionSource.extension(extensionName, property)              | _          || _
+        Test     | "printDependencies"              | true                                 | "Boolean"                         | ConventionSource.extension(extensionName, property)              | _          || _
+        Monitor  | "printDependencies"              | true                                 | "Boolean"                         | ConventionSource.extension(extensionName, property)              | _          || _
+        Test     | "remoteRepoUrl"                  | "http://remote/url1"                 | "String"                          | ConventionSource.extension(extensionName, property)              | _          || _
+        Monitor  | "remoteRepoUrl"                  | "http://remote/url2"                 | "String"                          | ConventionSource.extension(extensionName, property)              | _          || _
+        Test     | "includeDevelopmentDependencies" | true                                 | "Boolean"                         | ConventionSource.extension(extensionName, property)              | _          || _
+        Monitor  | "includeDevelopmentDependencies" | true                                 | "Boolean"                         | ConventionSource.extension(extensionName, property)              | _          || _
+        Test     | "orgName"                        | "org1"                               | "String"                          | ConventionSource.extension(extensionName, property)              | _          || _
+        Monitor  | "orgName"                        | "org1"                               | "String"                          | ConventionSource.extension(extensionName, property)              | _          || _
+        Test     | "packageFile"                    | osPath("/path/to/package1")          | "RegularFile"                     | ConventionSource.extension(extensionName, property)              | _          || _
+        Monitor  | "packageFile"                    | osPath("/path/to/package2")          | "RegularFile"                     | ConventionSource.extension(extensionName, property)              | _          || _
+        Test     | "ignorePolicy"                   | true                                 | "Boolean"                         | ConventionSource.extension(extensionName, property)              | _          || _
+        Monitor  | "ignorePolicy"                   | true                                 | "Boolean"                         | ConventionSource.extension(extensionName, property)              | _          || _
+        Test     | "showVulnerablePaths"            | VulnerablePathsOption.some           | "VulnerablePathsOption"           | ConventionSource.extension(extensionName, property)              | _          || _
+        Monitor  | "showVulnerablePaths"            | VulnerablePathsOption.all            | "VulnerablePathsOption"           | ConventionSource.extension(extensionName, property)              | _          || _
+        Test     | "projectName"                    | "project1"                           | "String"                          | ConventionSource.extension(extensionName, property)              | _          || _
+        Monitor  | "projectName"                    | "project1"                           | "String"                          | ConventionSource.extension(extensionName, property)              | _          || _
+        Test     | "targetReference"                | "reference1"                         | "String"                          | ConventionSource.extension(extensionName, property)              | _          || _
+        Monitor  | "targetReference"                | "reference1"                         | "String"                          | ConventionSource.extension(extensionName, property)              | _          || _
+        Test     | "policyPath"                     | osPath("/path/to/policy1")           | "RegularFile"                     | ConventionSource.extension(extensionName, property)              | _          || _
+        Monitor  | "policyPath"                     | osPath("/path/to/policy2")           | "RegularFile"                     | ConventionSource.extension(extensionName, property)              | _          || _
+        Test     | "printJson"                      | true                                 | "Boolean"                         | ConventionSource.extension(extensionName, property)              | _          || _
+        Monitor  | "printJson"                      | true                                 | "Boolean"                         | ConventionSource.extension(extensionName, property)              | _          || _
+        Test     | "jsonOutputPath"                 | osPath("/path/to/json1")             | "RegularFile"                     | ConventionSource.extension(extensionName, property)              | _          || _
+        Monitor  | "jsonOutputPath"                 | osPath("/path/to/json2")             | "RegularFile"                     | ConventionSource.extension(extensionName, property)              | _          || _
+        Test     | "printSarif"                     | true                                 | "Boolean"                         | ConventionSource.extension(extensionName, property)              | _          || _
+        Monitor  | "printSarif"                     | true                                 | "Boolean"                         | ConventionSource.extension(extensionName, property)              | _          || _
+        Test     | "sarifOutputPath"                | osPath("/path/to/sarif1")            | "RegularFile"                     | ConventionSource.extension(extensionName, property)              | _          || _
+        Monitor  | "sarifOutputPath"                | osPath("/path/to/sarif2")            | "RegularFile"                     | ConventionSource.extension(extensionName, property)              | _          || _
+        Test     | "severityThreshold"              | SeverityThresholdOption.critical     | "SeverityThresholdOption"         | ConventionSource.extension(extensionName, property)              | _          || _
+        Monitor  | "severityThreshold"              | SeverityThresholdOption.low          | "SeverityThresholdOption"         | ConventionSource.extension(extensionName, property)              | _          || _
+        Test     | "failOn"                         | FailOnOption.all                     | "FailOnOption"                    | ConventionSource.extension(extensionName, property)              | _          || _
+        Monitor  | "failOn"                         | FailOnOption.upgradable              | "FailOnOption"                    | ConventionSource.extension(extensionName, property)              | _          || _
+        Test     | "compilerArguments"              | ['--flag1']                          | "List<String>"                    | ConventionSource.extension(extensionName, property)              | _          || _
+        Monitor  | "compilerArguments"              | ['--flag2']                          | "List<String>"                    | ConventionSource.extension(extensionName, property)              | _          || _
 
-        Test     | "assetsProjectName"              | true                                 | "Boolean"                         | ConventionSource.extension(extensionName, property) | _
-        Monitor  | "assetsProjectName"              | true                                 | "Boolean"                         | ConventionSource.extension(extensionName, property) | _
-        Test     | "packagesFolder"                 | osPath("/path/to/packages1")         | "Directory"                       | ConventionSource.extension(extensionName, property) | _
-        Monitor  | "packagesFolder"                 | osPath("/path/to/packages2")         | "Directory"                       | ConventionSource.extension(extensionName, property) | _
-        Test     | "projectNamePrefix"              | "prefix1"                            | "String"                          | ConventionSource.extension(extensionName, property) | _
-        Monitor  | "projectNamePrefix"              | "prefix2"                            | "String"                          | ConventionSource.extension(extensionName, property) | _
+        Test     | "assetsProjectName"              | true                                 | "Boolean"                         | ConventionSource.extension(extensionName, property)              | _          || _
+        Monitor  | "assetsProjectName"              | true                                 | "Boolean"                         | ConventionSource.extension(extensionName, property)              | _          || _
+        Test     | "packagesFolder"                 | osPath("/path/to/packages1")         | "Directory"                       | ConventionSource.extension(extensionName, property)              | _          || _
+        Monitor  | "packagesFolder"                 | osPath("/path/to/packages2")         | "Directory"                       | ConventionSource.extension(extensionName, property)              | _          || _
+        Test     | "projectNamePrefix"              | "prefix1"                            | "String"                          | ConventionSource.extension(extensionName, property)              | _          || _
+        Monitor  | "projectNamePrefix"              | "prefix2"                            | "String"                          | ConventionSource.extension(extensionName, property)              | _          || _
 
-        Test     | "subProject"                     | "project1"                           | "String"                          | ConventionSource.extension(extensionName, property) | _
-        Monitor  | "subProject"                     | "project2"                           | "String"                          | ConventionSource.extension(extensionName, property) | _
-        Test     | "allSubProjects"                 | true                                 | "Boolean"                         | ConventionSource.extension(extensionName, property) | _
-        Monitor  | "allSubProjects"                 | true                                 | "Boolean"                         | ConventionSource.extension(extensionName, property) | _
-        Test     | "configurationMatching"          | "config1"                            | "String"                          | ConventionSource.extension(extensionName, property) | _
-        Monitor  | "configurationMatching"          | "config2"                            | "String"                          | ConventionSource.extension(extensionName, property) | _
-        Test     | "configurationAttributes"        | ['attribute1']                       | "List<String>"                    | ConventionSource.extension(extensionName, property) | _
-        Monitor  | "configurationAttributes"        | ['attribute2']                       | "List<String>"                    | ConventionSource.extension(extensionName, property) | _
-        Test     | "reachable"                      | true                                 | "Boolean"                         | ConventionSource.extension(extensionName, property) | _
-        Monitor  | "reachable"                      | true                                 | "Boolean"                         | ConventionSource.extension(extensionName, property) | _
-        Test     | "reachableTimeout"               | 22                                   | "Integer"                         | ConventionSource.extension(extensionName, property) | _
-        Monitor  | "reachableTimeout"               | 45                                   | "Integer"                         | ConventionSource.extension(extensionName, property) | _
-        Test     | "initScript"                     | osPath("/path/to/initScript1")       | "RegularFile"                     | ConventionSource.extension(extensionName, property) | _
-        Monitor  | "initScript"                     | osPath("/path/to/initScript2")       | "RegularFile"                     | ConventionSource.extension(extensionName, property) | _
+        Test     | "subProject"                     | "project1"                           | "String"                          | ConventionSource.extension(extensionName, property)              | _          || _
+        Monitor  | "subProject"                     | "project2"                           | "String"                          | ConventionSource.extension(extensionName, property)              | _          || _
+        Test     | "allSubProjects"                 | true                                 | "Boolean"                         | ConventionSource.extension(extensionName, property)              | _          || _
+        Monitor  | "allSubProjects"                 | true                                 | "Boolean"                         | ConventionSource.extension(extensionName, property)              | _          || _
+        Test     | "configurationMatching"          | "config1"                            | "String"                          | ConventionSource.extension(extensionName, property)              | _          || _
+        Monitor  | "configurationMatching"          | "config2"                            | "String"                          | ConventionSource.extension(extensionName, property)              | _          || _
+        Test     | "configurationAttributes"        | ['attribute1']                       | "List<String>"                    | ConventionSource.extension(extensionName, property)              | _          || _
+        Monitor  | "configurationAttributes"        | ['attribute2']                       | "List<String>"                    | ConventionSource.extension(extensionName, property)              | _          || _
+        Test     | "reachable"                      | true                                 | "Boolean"                         | ConventionSource.extension(extensionName, property)              | _          || _
+        Monitor  | "reachable"                      | true                                 | "Boolean"                         | ConventionSource.extension(extensionName, property)              | _          || _
+        Test     | "reachableTimeout"               | 22                                   | "Integer"                         | ConventionSource.extension(extensionName, property)              | _          || _
+        Monitor  | "reachableTimeout"               | 45                                   | "Integer"                         | ConventionSource.extension(extensionName, property)              | _          || _
+        Test     | "initScript"                     | osPath("/path/to/initScript1")       | "RegularFile"                     | ConventionSource.extension(extensionName, property)              | _          || _
+        Monitor  | "initScript"                     | osPath("/path/to/initScript2")       | "RegularFile"                     | ConventionSource.extension(extensionName, property)              | _          || _
 
-        Test     | "scanAllUnmanaged"               | true                                 | "Boolean"                         | ConventionSource.extension(extensionName, property) | _
-        Monitor  | "scanAllUnmanaged"               | true                                 | "Boolean"                         | ConventionSource.extension(extensionName, property) | _
+        Test     | "scanAllUnmanaged"               | true                                 | "Boolean"                         | ConventionSource.extension(extensionName, property)              | _          || _
+        Monitor  | "scanAllUnmanaged"               | true                                 | "Boolean"                         | ConventionSource.extension(extensionName, property)              | _          || _
 
-        Test     | "strictOutOfSync"                | true                                 | "Boolean"                         | ConventionSource.extension(extensionName, property) | _
-        Monitor  | "strictOutOfSync"                | true                                 | "Boolean"                         | ConventionSource.extension(extensionName, property) | _
+        Test     | "strictOutOfSync"                | true                                 | "Boolean"                         | ConventionSource.extension(extensionName, property)              | _          || _
+        Monitor  | "strictOutOfSync"                | true                                 | "Boolean"                         | ConventionSource.extension(extensionName, property)              | _          || _
 
-        Test     | "command"                        | "command1"                           | "String"                          | ConventionSource.extension(extensionName, property) | _
-        Monitor  | "command"                        | "command2"                           | "String"                          | ConventionSource.extension(extensionName, property) | _
-        Test     | "skipUnresolved"                 | true                                 | "Boolean"                         | ConventionSource.extension(extensionName, property) | _
-        Monitor  | "skipUnresolved"                 | true                                 | "Boolean"                         | ConventionSource.extension(extensionName, property) | _
+        Test     | "command"                        | "command1"                           | "String"                          | ConventionSource.extension(extensionName, property)              | _          || _
+        Monitor  | "command"                        | "command2"                           | "String"                          | ConventionSource.extension(extensionName, property)              | _          || _
+        Test     | "skipUnresolved"                 | true                                 | "Boolean"                         | ConventionSource.extension(extensionName, property)              | _          || _
+        Monitor  | "skipUnresolved"                 | true                                 | "Boolean"                         | ConventionSource.extension(extensionName, property)              | _          || _
 
-        Test     | "insecure"                       | true                                 | "Boolean"                         | ConventionSource.extension(extensionName, property) | _
-        Monitor  | "insecure"                       | true                                 | "Boolean"                         | ConventionSource.extension(extensionName, property) | _
-        Test     | "debug"                          | true                                 | "Boolean"                         | ConventionSource.extension(extensionName, property) | _
-        Monitor  | "debug"                          | true                                 | "Boolean"                         | ConventionSource.extension(extensionName, property) | _
+        Test     | "insecure"                       | true                                 | "Boolean"                         | ConventionSource.extension(extensionName, property)              | _          || _
+        Monitor  | "insecure"                       | true                                 | "Boolean"                         | ConventionSource.extension(extensionName, property)              | _          || _
+        Test     | "debug"                          | true                                 | "Boolean"                         | ConventionSource.extension(extensionName, property)              | _          || _
+        Monitor  | "debug"                          | true                                 | "Boolean"                         | ConventionSource.extension(extensionName, property)              | _          || _
 
-        Test     | "token"                          | "test_token_1"                       | "String"                          | ConventionSource.extension(extensionName, property) | _
-        Monitor  | "token"                          | "test_token_2"                       | "String"                          | ConventionSource.extension(extensionName, property) | _
+        Test     | "token"                          | "test_token_1"                       | "String"                          | ConventionSource.extension(extensionName, property)              | _          || _
+        Monitor  | "token"                          | "test_token_2"                       | "String"                          | ConventionSource.extension(extensionName, property)              | _          || _
 
-        Test     | "executableName"                 | "snyk1"                              | "String"                          | ConventionSource.extension(extensionName, property) | _
-        Monitor  | "executableName"                 | "snyk2"                              | "String"                          | ConventionSource.extension(extensionName, property) | _
-        Test     | "snykPath"                       | osPath("/path/to/snyk_home_1")       | "Directory"                       | ConventionSource.extension(extensionName, property) | _
-        Monitor  | "snykPath"                       | osPath("/path/to/snyk_home_2")       | "Directory"                       | ConventionSource.extension(extensionName, property) | _
+        Test     | "executableName"                 | "snyk1"                              | "String"                          | ConventionSource.extension(extensionName, property)              | _          || _
+        Monitor  | "executableName"                 | "snyk2"                              | "String"                          | ConventionSource.extension(extensionName, property)              | _          || _
+        Test     | "snykPath"                       | osPath("/path/to/snyk_home_1")       | "Directory"                       | ConventionSource.extension(extensionName, property)              | _          || _
+        Monitor  | "snykPath"                       | osPath("/path/to/snyk_home_2")       | "Directory"                       | ConventionSource.extension(extensionName, property)              | _          || _
 
-        Monitor  | "trustPolicies"                  | true                                 | "Boolean"                         | ConventionSource.extension(extensionName, property) | _
-        Monitor  | "projectEnvironment"             | [EnvironmentOption.onprem]           | "List<EnvironmentOption>"         | ConventionSource.extension(extensionName, property) | _
-        Monitor  | "projectLifecycle"               | [LifecycleOption.development]        | "List<LifecycleOption>"           | ConventionSource.extension(extensionName, property) | _
-        Monitor  | "projectBusinessCriticality"     | [BusinessCriticalityOption.critical] | "List<BusinessCriticalityOption>" | ConventionSource.extension(extensionName, property) | _
-        Monitor  | "projectTags"                    | ["foo": "bar"]                       | "Map<String, String>"             | ConventionSource.extension(extensionName, property) | _
+        Monitor  | "trustPolicies"                  | true                                 | "Boolean"                         | ConventionSource.extension(extensionName, property)              | _          || _
+        Monitor  | "projectEnvironment"             | [EnvironmentOption.onprem]           | "List<EnvironmentOption>"         | ConventionSource.extension(extensionName, property)              | _          || _
+        Monitor  | "projectLifecycle"               | [LifecycleOption.development]        | "List<LifecycleOption>"           | ConventionSource.extension(extensionName, property)              | _          || _
+        Monitor  | "projectBusinessCriticality"     | [BusinessCriticalityOption.critical] | "List<BusinessCriticalityOption>" | ConventionSource.extension(extensionName, property)              | _          || _
+        Monitor  | "projectTags"                    | ["foo": "bar"]                       | "Map<String, String>"             | ConventionSource.extension(extensionName, property)              | _          || _
+
+        Test     | "reports.sarif.enabled"          | true                                 | "Boolean"                         | ConventionSource.extension(extensionName, "sarifReportsEnabled") | ""         || _
+        Test     | "reports.json.enabled"           | true                                 | "Boolean"                         | ConventionSource.extension(extensionName, "jsonReportsEnabled")  | ""         || _
+        Report   | "reports.sarif.enabled"          | true                                 | "Boolean"                         | ConventionSource.extension(extensionName, "sarifReportsEnabled") | ""         || _
+        Report   | "reports.json.enabled"           | false                                | "Boolean"                         | ConventionSource.extension(extensionName, "jsonReportsEnabled")  | ""         || _
 
         value = (type != _) ? wrapValueBasedOnType(rawValue, type.toString(), wrapValueFallback) : rawValue
         testValue = (expectedValue == _) ? rawValue : expectedValue
@@ -572,6 +578,22 @@ class SnykPluginIntegrationSpec extends SnykIntegrationSpec {
         "insecure"                       | toSetter(property)      | false                                                           | _                                                                      | "Boolean"                                   | PropertyLocation.script
         "insecure"                       | toProviderSet(property) | true                                                            | _                                                                      | "Provider<Boolean>"                         | PropertyLocation.script
         "insecure"                       | toProviderSet(property) | false                                                           | _                                                                      | "Boolean"                                   | PropertyLocation.script
+
+        "sarifReportsEnabled"            | _                       | _                                                               | false                                                                  | "Provider<Boolean>"                         | PropertyLocation.none
+        "sarifReportsEnabled"            | _                       | "true"                                                          | true                                                                   | _                                           | PropertyLocation.environment
+        "sarifReportsEnabled"            | _                       | "true"                                                          | true                                                                   | _                                           | PropertyLocation.property
+        "sarifReportsEnabled"            | toSetter(property)      | true                                                            | _                                                                      | "Provider<Boolean>"                         | PropertyLocation.script
+        "sarifReportsEnabled"            | toSetter(property)      | false                                                           | _                                                                      | "Boolean"                                   | PropertyLocation.script
+        "sarifReportsEnabled"            | toProviderSet(property) | true                                                            | _                                                                      | "Provider<Boolean>"                         | PropertyLocation.script
+        "sarifReportsEnabled"            | toProviderSet(property) | false                                                           | _                                                                      | "Boolean"                                   | PropertyLocation.script
+
+        "jsonReportsEnabled"             | _                       | _                                                               | true                                                                   | "Provider<Boolean>"                         | PropertyLocation.none
+        "jsonReportsEnabled"             | _                       | "true"                                                          | true                                                                   | _                                           | PropertyLocation.environment
+        "jsonReportsEnabled"             | _                       | "true"                                                          | true                                                                   | _                                           | PropertyLocation.property
+        "jsonReportsEnabled"             | toSetter(property)      | true                                                            | _                                                                      | "Provider<Boolean>"                         | PropertyLocation.script
+        "jsonReportsEnabled"             | toSetter(property)      | false                                                           | _                                                                      | "Boolean"                                   | PropertyLocation.script
+        "jsonReportsEnabled"             | toProviderSet(property) | true                                                            | _                                                                      | "Provider<Boolean>"                         | PropertyLocation.script
+        "jsonReportsEnabled"             | toProviderSet(property) | false                                                           | _                                                                      | "Boolean"                                   | PropertyLocation.script
 
         value = (type != _) ? wrapValueBasedOnType(rawValue, type.toString(), wrapValueFallback) : rawValue
         providedValue = (location == PropertyLocation.script) ? type : value

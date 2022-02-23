@@ -19,7 +19,6 @@ package wooga.gradle.snyk.tasks
 import com.wooga.gradle.PlatformUtils
 import com.wooga.spock.extensions.snyk.Snyk
 import org.apache.commons.io.FileUtils
-import spock.lang.Ignore
 import spock.lang.Shared
 import spock.lang.Unroll
 
@@ -29,13 +28,15 @@ abstract class SnykTestBaseIntegrationSpec<T extends SnykTask> extends SnykCheck
 
     @Shared
     @Snyk
-    File snykExecutabe
+    File snykExecutable
 
     def setDownloadedSnyk() {
-        buildFile << """
-            ${subjectUnderTestName}.snykPath = file("${snykExecutabe.parentFile.path}")
-            ${subjectUnderTestName}.executableName = "${snykExecutabe.name}"
-        """.stripIndent()
+        environmentVariables.set("SNYK_PATH", snykExecutable.parentFile.path)
+
+        appendToSubjectTask("""
+        snykPath = file(System.getenv('SNYK_PATH'))
+        executableName = "${snykExecutable.name}"
+        """.stripIndent())
     }
 
     def setSnykToken(String token = null) {
@@ -45,14 +46,80 @@ abstract class SnykTestBaseIntegrationSpec<T extends SnykTask> extends SnykCheck
         """.stripIndent()
     }
 
+    def setSnykPolicy(File policy = null) {
+        appendToSubjectTask("""
+        policyPath = ${wrapValueBasedOnType(policy ?: snykPolicy, File)}
+        """.stripIndent())
+    }
+
+    File snykPolicy
+
+    def setup() {
+        snykPolicy = createFile(".snyk", projectDir)
+    }
+
+    @Unroll
+    def "generates #reportType report"() {
+        given: "a NET solution or project"
+        setDownloadedSnyk()
+        setSnykToken()
+
+        and: "an empty policy file (see: https://github.com/snyk/policy/issues/61)"
+        setSnykPolicy()
+
+        and: "a mocked project"
+        copyToProject(getResourceFile("net_project"), projectDir)
+
+        and: "project-specific configurations for it"
+        appendToSubjectTask("""
+            packageFile=${wrapValueBasedOnType("net_project.sln", File)} 
+            """.stripIndent())
+
+        and: "a future report file"
+        def jsonReport = new File(projectDir, jsonReportLocation)
+        assert !jsonReport.exists()
+        def sarifReport = new File(projectDir, sarifReportLocation)
+        assert !sarifReport.exists()
+
+        if (jsonEnabled) {
+            appendToSubjectTask("""
+            reports.json.enabled=true
+            reports.json.outputLocation=${wrapValueBasedOnType(jsonReportLocation, File)}  
+            """.stripIndent())
+        }
+
+        if (sarifEnabled) {
+            appendToSubjectTask("""
+            reports.sarif.enabled=true
+            reports.sarif.outputLocation=${wrapValueBasedOnType(sarifReportLocation, File)}  
+            """.stripIndent())
+        }
+
+        when:
+        def result = runTasks(subjectUnderTestName)
+
+        then:
+        result.success
+        result.wasExecuted(subjectUnderTestName)
+        !result.wasSkipped(subjectUnderTestName)
+        jsonReport.exists() == jsonEnabled
+        sarifReport.exists() == sarifEnabled
+
+        where:
+        reportType   | jsonEnabled | sarifEnabled
+        "json"       | true        | false
+        "sarif"      | false       | true
+        "json&sarif" | true        | true
+        jsonReportLocation = "build/reports/report.json"
+        sarifReportLocation = "build/reports/report.sarif"
+    }
+
     /**
      * Tests against a NET project
      * https://docs.snyk.io/products/snyk-open-source/language-and-package-manager-support/snyk-for-.net
      */
-    @Ignore
     @Unroll("runs on #type NET project")
     def "runs test on NET project"() {
-
         given: "a NET solution or project"
         setDownloadedSnyk()
         setSnykToken()
@@ -65,11 +132,19 @@ abstract class SnykTestBaseIntegrationSpec<T extends SnykTask> extends SnykCheck
             """.stripIndent()
         }
 
+        and: "an empty policy file (see: https://github.com/snyk/policy/issues/61)"
+        setSnykPolicy()
+
+        and: "set log output enabled to stdout"
+        appendToSubjectTask("""
+        logToStdout = true
+        """.stripIndent())
+
         when:
         def result = runTasks(subjectUnderTestName)
 
         then:
-        outputContains(result, Test.composeStartMessage(projectDir.path)) || outputContains(result, Test.debugStartMessage)
+        outputContains(result, composeStartMessage(projectDir.path)) || outputContains(result, debugStartMessage)
 
         where:
         type    | projectToCopy                  | fileName
@@ -80,7 +155,6 @@ abstract class SnykTestBaseIntegrationSpec<T extends SnykTask> extends SnykCheck
      * Tests against Gradle projects
      * https://docs.snyk.io/products/snyk-open-source/language-and-package-manager-support/snyk-for-java-gradle-maven
      */
-    @Ignore
     @Unroll("runs on Gradle #name project")
     def "runs test on gradle project"() {
 
@@ -93,11 +167,16 @@ abstract class SnykTestBaseIntegrationSpec<T extends SnykTask> extends SnykCheck
         and: "project-specific configurations for it"
         buildFile << "\n${subjectUnderTestName}.allSubProjects=true"
 
+        and: "set log output enabled to stdout"
+        appendToSubjectTask("""
+        logToStdout = true
+        """.stripIndent())
+
         when:
         def result = runTasks(subjectUnderTestName)
 
         then:
-        outputContains(result, Test.composeStartMessage(projectDir.path)) || outputContains(result, Test.debugStartMessage)
+        outputContains(result, composeStartMessage(projectDir.path)) || outputContains(result, debugStartMessage)
 
         where:
         name     | projectToCopy
@@ -155,4 +234,10 @@ abstract class SnykTestBaseIntegrationSpec<T extends SnykTask> extends SnykCheck
     static String getCopiedToTempResourceDirectoryPath(String name) {
         PlatformUtils.escapedPath(osPath(copyResourceDirectoryToTemp(name).path))
     }
+
+    static String composeStartMessage(String workingDir) {
+        "Testing ${workingDir.replace("\\\\", '\\')}"
+    }
+
+    static final String debugStartMessage = "===== DEBUG INFORMATION START ====="
 }

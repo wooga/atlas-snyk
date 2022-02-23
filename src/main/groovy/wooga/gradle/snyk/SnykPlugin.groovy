@@ -28,10 +28,7 @@ import wooga.gradle.snyk.cli.*
 import wooga.gradle.snyk.cli.commands.MonitorProjectCommandSpec
 import wooga.gradle.snyk.cli.commands.TestProjectCommandSpec
 import wooga.gradle.snyk.internal.DefaultSnykPluginExtension
-import wooga.gradle.snyk.tasks.Monitor
-import wooga.gradle.snyk.tasks.SnykInstall
-import wooga.gradle.snyk.tasks.SnykTask
-import wooga.gradle.snyk.tasks.Test
+import wooga.gradle.snyk.tasks.*
 
 class SnykPlugin implements Plugin<Project> {
 
@@ -40,10 +37,12 @@ class SnykPlugin implements Plugin<Project> {
     static String EXTENSION_NAME = "snyk"
     static String INSTALL_TASK_NAME = "snykInstall"
     static String TEST_TASK_NAME = "snykTest"
+    static String REPORT_TASK_NAME = "snykReport"
     static String MONITOR_TASK_NAME = "snykMonitor"
 
     static final String MONITOR_CHECK = "monitor_check"
     static final String TEST_CHECK = "test_check"
+    static final String REPORT_CHECK = "report_check"
     static final String MONITOR_PUBLISH = "monitor_publish"
 
     @Override
@@ -56,7 +55,12 @@ class SnykPlugin implements Plugin<Project> {
         // Map the properties specific to certain tasks
         tasks.withType(Test).configureEach {
             mapExtensionPropertiesToTestTask(it, extension)
+            it.reports.sarif.setEnabled(extension.sarifReportsEnabled)
+            it.reports.json.setEnabled(extension.jsonReportsEnabled)
+            it.reports.sarif.outputLocation.convention(extension.reportsDir.file(it.name + "/" + it.name + "." + reports.sarif.name))
+            it.reports.json.outputLocation.convention(extension.reportsDir.file(it.name + "/" + it.name + "." + reports.json.name))
         }
+
         tasks.withType(Monitor).configureEach {
             mapExtensionPropertiesToTestTask(it, extension)
             mapExtensionPropertiesToMonitorTask(it, extension)
@@ -179,6 +183,9 @@ class SnykPlugin implements Plugin<Project> {
         extension.checkTaskName.convention(SnykConventions.checkTaskName.getStringValueProvider(project))
         extension.publishTaskName.convention(SnykConventions.publishTaskName.getStringValueProvider(project))
 
+        extension.reportsDir.convention(SnykConventions.reportsDir.getDirectoryValueProvider(project))
+        extension.jsonReportsEnabled.convention(SnykConventions.jsonReportsEnabled.getBooleanValueProvider(project))
+        extension.sarifReportsEnabled.convention(SnykConventions.sarifReportsEnabled.getBooleanValueProvider(project))
         extension
 
     }
@@ -252,6 +259,7 @@ class SnykPlugin implements Plugin<Project> {
     private static void registerSnykTasks(Project project, SnykPluginExtension extension) {
         def snykInstall = project.tasks.register(INSTALL_TASK_NAME, SnykInstall)
         project.tasks.register(TEST_TASK_NAME, Test)
+        project.tasks.register(REPORT_TASK_NAME, Report)
         project.tasks.register(MONITOR_TASK_NAME, Monitor)
 
         project.tasks.withType(SnykInstall).configureEach { installTask ->
@@ -277,6 +285,9 @@ class SnykPlugin implements Plugin<Project> {
                 }
                 if (strategy.contains(TEST_CHECK)) {
                     hookSnykTask(project.tasks.withType(Test), project.tasks.named(extension.checkTaskName.get()))
+                }
+                if (strategy.contains(REPORT_CHECK)) {
+                    hookSnykTask(project.tasks.withType(Report), project.tasks.named(extension.checkTaskName.get()))
                 }
             }
         }

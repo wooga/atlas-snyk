@@ -17,12 +17,10 @@
 package wooga.gradle.snyk.tasks
 
 import com.wooga.gradle.PlatformUtils
-import com.wooga.gradle.test.GradleSpecUtils
 import com.wooga.gradle.test.PropertyQueryTaskWriter
 import org.gradle.api.file.Directory
 import spock.lang.Unroll
 import wooga.gradle.snyk.SnykIntegrationSpec
-import wooga.gradle.snyk.SnykPlugin
 
 import java.lang.reflect.ParameterizedType
 import java.nio.file.Files

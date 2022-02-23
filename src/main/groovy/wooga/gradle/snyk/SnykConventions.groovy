@@ -45,7 +45,7 @@ class SnykConventions {
     )
 
     static final PropertyLookup snykPath = new PropertyLookup(
-            ["SNYK_PATH", "SNYK_SNYK_PATH", ],
+            ["SNYK_PATH", "SNYK_SNYK_PATH",],
             ["snyk.snykPath", "snyk.path"],
             null
     )
@@ -326,4 +326,21 @@ class SnykConventions {
             "publish"
     )
 
+    static final PropertyLookup jsonReportsEnabled = new PropertyLookup(
+            "SNYK_JSON_REPORTS_ENABLED",
+            "snyk.jsonReportsEnabled",
+            true
+    )
+
+    static final PropertyLookup sarifReportsEnabled = new PropertyLookup(
+            "SNYK_SARIF_REPORTS_ENABLED",
+            "snyk.sarifReportsEnabled",
+            false
+    )
+
+    static final PropertyLookup reportsDir = new PropertyLookup(
+            "SNYK_REPORTS_DIR",
+            "snyk.reportsDir",
+            "reports"
+    )
 }

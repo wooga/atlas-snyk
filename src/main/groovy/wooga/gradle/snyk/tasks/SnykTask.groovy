@@ -16,6 +16,7 @@
 
 package wooga.gradle.snyk.tasks
 
+import com.sun.org.apache.xpath.internal.operations.Bool
 import com.wooga.gradle.ArgumentsSpec
 import com.wooga.gradle.io.FileUtils
 import com.wooga.gradle.io.LogFileSpec
@@ -49,6 +50,11 @@ abstract class SnykTask extends DefaultTask
     SnykTask() {
         internalArguments = project.provider({ composeArguments() })
         outputs.upToDateWhen { false }
+    }
+
+    @Internal
+    protected Boolean getIgnoreExitValue() {
+        false
     }
 
     @TaskAction
@@ -86,7 +92,9 @@ abstract class SnykTask extends DefaultTask
             }
         })
 
-        handleExitCode(execResult.exitValue)
+        if(!ignoreExitValue) {
+            handleExitCode(execResult.exitValue)
+        }
     }
 
     List<String> composeArguments() {
