@@ -5,6 +5,7 @@ import groovy.json.JsonSlurper
 import org.gradle.api.DefaultTask
 import org.gradle.api.file.RegularFile
 import org.gradle.api.provider.Provider
+import org.gradle.api.tasks.OutputFile
 import org.gradle.api.tasks.TaskAction
 import wooga.gradle.snyk.SnykInstallSpec
 import wooga.gradle.snyk.tasks.internal.CachedGroliphantDownloader
@@ -15,7 +16,9 @@ class SnykInstall extends DefaultTask implements SnykInstallSpec {
 
     private static final String SNYK_RELEASE_JSON_URL = "https://static.snyk.io/cli/%s/release.json"
 
-    private final Provider<RegularFile> snykExecutable
+    @OutputFile
+    final Provider<RegularFile> snykExecutable
+
     private final Provider<Map<String, SnykDownloadAsset>> snykReleasesProvider
 
     SnykInstall() {

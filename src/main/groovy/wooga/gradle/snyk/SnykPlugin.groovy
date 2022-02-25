@@ -28,14 +28,17 @@ import wooga.gradle.snyk.cli.*
 import wooga.gradle.snyk.cli.commands.MonitorProjectCommandSpec
 import wooga.gradle.snyk.cli.commands.TestProjectCommandSpec
 import wooga.gradle.snyk.internal.DefaultSnykPluginExtension
+import wooga.gradle.snyk.internal.DefaultSnykRootPluginExtension
 import wooga.gradle.snyk.tasks.*
 
-class SnykPlugin implements Plugin<Project> {
+class SnykPlugin implements Plugin<Project>, ProjectRegistrationHandler {
 
     static Logger logger = Logging.getLogger(SnykPlugin)
 
+    static String GROUP = "snyk"
     static String EXTENSION_NAME = "snyk"
     static String INSTALL_TASK_NAME = "snykInstall"
+
     static String TEST_TASK_NAME = "snykTest"
     static String REPORT_TASK_NAME = "snykReport"
     static String MONITOR_TASK_NAME = "snykMonitor"
@@ -45,13 +48,24 @@ class SnykPlugin implements Plugin<Project> {
     static final String REPORT_CHECK = "report_check"
     static final String MONITOR_PUBLISH = "monitor_publish"
 
+    private Project project
+
     @Override
     void apply(Project project) {
+        this.project = project
         def tasks = project.tasks
+        def snykInstall = project.tasks.register(INSTALL_TASK_NAME, SnykInstall)
+        def snykTest = project.tasks.register(TEST_TASK_NAME, Test)
+        def snykReport = project.tasks.register(REPORT_TASK_NAME, Report)
+        def snykMonitor = project.tasks.register(MONITOR_TASK_NAME, Monitor)
+
         // Create the extension
-        def extension = createAndConfigureExtension(project)
+        def extension = createAndConfigureExtension(project, snykTest, snykMonitor, snykReport)
         // Map the base task properties common to all snyk tasks
-        mapExtensionPropertiesToBaseTask(extension, project)
+
+        project.tasks.withType(SnykTask).configureEach {
+            mapExtensionPropertiesToBaseTask(it, extension, project)
+        }
         // Map the properties specific to certain tasks
         tasks.withType(Test).configureEach {
             mapExtensionPropertiesToTestTask(it, extension)
@@ -66,16 +80,147 @@ class SnykPlugin implements Plugin<Project> {
             mapExtensionPropertiesToMonitorTask(it, extension)
         }
         // Register an install task (to be used to install the snyk binary if need be)
-        registerSnykTasks(project, extension)
+        registerSnykInstall(project, extension, snykInstall)
+        registerTaskGroupAndDescription(project)
+        hookStrategyLifecycleTasks(project, extension)
     }
 
-    protected static SnykPluginExtension createAndConfigureExtension(Project project) {
-        def extension = project.extensions.create(SnykPluginExtension, EXTENSION_NAME, DefaultSnykPluginExtension, project)
+    @Override
+    SnykPluginExtension registerProject(Project project, SnykRootPluginExtension parentExtension) {
+        def projectName = project.rootProject.name + project.path
+        def snykTest = project.tasks.register(TEST_TASK_NAME, Test)
+        def snykReport = project.tasks.register(REPORT_TASK_NAME, Report)
+        def snykMonitor = project.tasks.register(MONITOR_TASK_NAME, Monitor)
+
+        def extension = project.extensions.create(SnykPluginExtension, EXTENSION_NAME, DefaultSnykPluginExtension, project, snykTest, snykMonitor, snykReport)
+
+        setupProjectRegistration(project, projectName, extension, parentExtension, snykTest, snykMonitor, snykReport)
+        registerTaskGroupAndDescription(project)
+        extension.packageFile.set(null)
+        extension.workingDirectory.convention(parentExtension.workingDirectory)
+        extension.subProject.set(project.name)
+        extension
+    }
+
+    SnykPluginExtension registerProject(File projectFile, SnykRootPluginExtension parentExtension) {
+        def relativeProjectFile = project.relativePath(projectFile)
+        def projectName = project.name + ":" + relativeProjectFile
+
+        if (projectFile.isFile()) {
+            logger.info("register snyk project file: ${projectFile.absolutePath}")
+        } else {
+            logger.info("register snyk project at path: ${projectFile.absolutePath}")
+        }
+
+        def projectTaskName = relativeProjectFile.replaceAll(/[\/\\:"<>"?*]/, ".")
+
+        def snykTest = project.tasks.register(TEST_TASK_NAME + "." + projectTaskName, Test)
+        def snykReport = project.tasks.register(REPORT_TASK_NAME + "." + projectTaskName, Report)
+        def snykMonitor = project.tasks.register(MONITOR_TASK_NAME + "." + projectTaskName, Monitor)
+
+        def extension = project.extensions.create(SnykPluginExtension, EXTENSION_NAME + "." + projectTaskName, DefaultSnykPluginExtension, project, snykTest, snykMonitor, snykReport)
+        setupProjectRegistration(project, projectName, extension, parentExtension, snykTest, snykMonitor, snykReport)
+
+        if(!projectFile.exists()) {
+            throw new FileNotFoundException("project file to be registered does not exist")
+        }
+
+        if (projectFile.isFile()) {
+            extension.packageFile.convention(project.layout.projectDirectory.file(projectFile.absolutePath))
+            extension.workingDirectory.convention(parentExtension.workingDirectory)
+            extension.subProject.convention(null)
+        } else {
+            extension.packageFile.convention(parentExtension.packageFile)
+            extension.workingDirectory.convention(projectFile.absolutePath)
+            extension.subProject.convention(null)
+        }
+        extension.packageFile.map()
+        extension
+    }
+
+    static void setupProjectRegistration(Project project, String projectName, SnykPluginExtension extension, SnykPluginExtension parentExtension, TaskProvider<Test> snykTest, TaskProvider<Monitor> snykMonitor, TaskProvider<Report> snykReport) {
+        ([snykTest, snykReport, snykMonitor] as List<TaskProvider<SnykTask>>).each {
+            it.configure {
+                mapExtensionPropertiesToBaseTask(it, extension, project)
+            }
+        }
+
+        snykTest.configure {
+            mapExtensionPropertiesToTestTask(it, extension)
+            it.reports.sarif.setEnabled(extension.sarifReportsEnabled)
+            it.reports.json.setEnabled(extension.jsonReportsEnabled)
+        }
+
+        snykMonitor.configure {
+            mapExtensionPropertiesToTestTask(it, extension)
+            mapExtensionPropertiesToMonitorTask(it, extension)
+        }
+
+        extension.projectName.convention(projectName)
+        extension.snykPath.convention(parentExtension.snykPath)
+        extension.executableName.convention(parentExtension.executableName)
+        extension.executableName.convention(parentExtension.executableName)
+        extension.executableName.convention(parentExtension.executableName)
+        extension.snykPath.convention(parentExtension.snykPath)
+        extension.token.convention(parentExtension.token)
+        extension.insecure.convention(parentExtension.insecure)
+        extension.debug.convention(parentExtension.debug)
+        extension.allProjects.convention(parentExtension.allProjects)
+        extension.detectionDepth.convention(parentExtension.detectionDepth)
+        extension.exclude.convention(parentExtension.exclude)
+        extension.pruneRepeatedSubDependencies.convention(parentExtension.pruneRepeatedSubDependencies)
+        extension.printDependencies.convention(parentExtension.printDependencies)
+        extension.remoteRepoUrl.convention(parentExtension.remoteRepoUrl)
+        extension.includeDevelopmentDependencies.convention(parentExtension.includeDevelopmentDependencies)
+        extension.orgName.convention(parentExtension.orgName)
+        extension.ignorePolicy.convention(parentExtension.ignorePolicy)
+        extension.showVulnerablePaths.convention(parentExtension.showVulnerablePaths)
+        extension.targetReference.convention(parentExtension.targetReference)
+        extension.policyPath.convention(parentExtension.policyPath)
+        extension.printJson.convention(parentExtension.printJson)
+        extension.jsonOutputPath.convention(parentExtension.jsonOutputPath)
+        extension.printSarif.convention(parentExtension.printSarif)
+        extension.sarifOutputPath.convention(parentExtension.sarifOutputPath)
+        extension.severityThreshold.convention(parentExtension.severityThreshold)
+        extension.failOn.convention(parentExtension.failOn)
+        extension.compilerArguments.convention(parentExtension.compilerArguments)
+        extension.trustPolicies.convention(parentExtension.trustPolicies)
+        extension.projectEnvironment.convention(parentExtension.projectEnvironment)
+        extension.projectLifecycle.convention(parentExtension.projectLifecycle)
+        extension.projectBusinessCriticality.convention(parentExtension.projectBusinessCriticality)
+        extension.projectTags.set(parentExtension.projectTags)
+        extension.assetsProjectName.convention(parentExtension.assetsProjectName)
+        extension.packagesFolder.convention(parentExtension.packagesFolder)
+        extension.projectNamePrefix.convention(parentExtension.projectNamePrefix)
+        extension.strictOutOfSync.convention(parentExtension.strictOutOfSync)
+        extension.scanAllUnmanaged.convention(parentExtension.scanAllUnmanaged)
+        extension.reachable.convention(parentExtension.reachable)
+        extension.reachableTimeout.convention(parentExtension.reachableTimeout)
+        extension.subProject.convention(parentExtension.subProject)
+        extension.allSubProjects.convention(parentExtension.allSubProjects)
+        extension.configurationMatching.convention(parentExtension.configurationMatching)
+        extension.configurationAttributes.convention(parentExtension.configurationAttributes)
+        extension.command.convention(parentExtension.command)
+        extension.initScript.convention(parentExtension.initScript)
+        extension.skipUnresolved.convention(parentExtension.skipUnresolved)
+        extension.yarnWorkspaces.convention(parentExtension.yarnWorkspaces)
+
+        extension.reportsDir.convention(parentExtension.reportsDir)
+        extension.jsonReportsEnabled.convention(parentExtension.jsonReportsEnabled)
+        extension.sarifReportsEnabled.convention(parentExtension.sarifReportsEnabled)
+
+        extension
+    }
+
+
+    protected SnykRootPluginExtension createAndConfigureExtension(Project project, TaskProvider<Test> snykTest, TaskProvider<Monitor> snykMonitor, TaskProvider<Report> snykReport) {
+        def extension = project.extensions.create(SnykRootPluginExtension, EXTENSION_NAME, DefaultSnykRootPluginExtension, project, snykTest, snykMonitor, snykReport, this)
 
         // TODO: Move to conventions?
         extension.autoDownload.convention(false)
         extension.autoUpdate.convention(true)
 
+        extension.workingDirectory.set(project.layout.projectDirectory.asFile.absolutePath)
         extension.version.convention(SnykConventions.version.getStringValueProvider(project))
         extension.executableName.convention(SnykConventions.executableName.getStringValueProvider(project))
         extension.installationDir.convention(SnykConventions.installationDir.getDirectoryValueProvider(project).orElse(
@@ -190,17 +335,15 @@ class SnykPlugin implements Plugin<Project> {
 
     }
 
-    private static mapExtensionPropertiesToBaseTask(extension, project) {
-        project.tasks.withType(SnykTask).configureEach {
-            it.logToStdout.convention(it.logger.infoEnabled)
-            it.workingDirectory.convention(extension.workingDirectory)
-            it.executableName.convention(extension.executableName)
-            it.snykPath.convention(extension.snykPath)
-            it.token.convention(extension.token)
-            it.debug.convention(extension.debug)
-            it.insecure.convention(extension.insecure)
-            it.logFile.convention(project.layout.buildDirectory.file("logs/${it.name}.log"))
-        }
+    private static mapExtensionPropertiesToBaseTask(SnykTask task, SnykPluginExtension extension, Project project) {
+        task.logToStdout.convention(project.logger.isEnabled(LogLevel.INFO))
+        task.workingDirectory.convention(extension.workingDirectory)
+        task.executableName.convention(extension.executableName)
+        task.snykPath.convention(extension.snykPath)
+        task.token.convention(extension.token)
+        task.debug.convention(extension.debug)
+        task.insecure.convention(extension.insecure)
+        task.logFile.convention(project.layout.buildDirectory.file("logs/${task.name}.log"))
     }
 
     private static mapExtensionPropertiesToTestTask(TestProjectCommandSpec task, SnykPluginExtension extension) {
@@ -256,38 +399,71 @@ class SnykPlugin implements Plugin<Project> {
         task.projectTags.convention(extension.projectTags)
     }
 
-    private static void registerSnykTasks(Project project, SnykPluginExtension extension) {
-        def snykInstall = project.tasks.register(INSTALL_TASK_NAME, SnykInstall)
-        project.tasks.register(TEST_TASK_NAME, Test)
-        project.tasks.register(REPORT_TASK_NAME, Report)
-        project.tasks.register(MONITOR_TASK_NAME, Monitor)
+    private static void registerTaskGroupAndDescription(Project project) {
+        project.tasks.withType(SnykInstall).configureEach({
+            it.group = GROUP
+        })
 
+        project.tasks.withType(Test).configureEach({
+            it.group = GROUP
+            it.description = "run snyk monitor on project"
+        })
+
+        project.tasks.withType(Monitor).configureEach({
+            it.group = GROUP
+            it.description = "run snyk test on project"
+        })
+
+        project.tasks.withType(Report).configureEach({
+            it.group = GROUP
+            it.description = "generate snyk report"
+        })
+    }
+
+    private static void registerSnykInstall(Project project, SnykRootPluginExtension extension, TaskProvider<SnykInstall> snykInstall) {
         project.tasks.withType(SnykInstall).configureEach { installTask ->
+            installTask.description = "Install snyk cli"
             installTask.installationDir.convention(extension.installationDir)
             installTask.executableName.convention(extension.executableName)
             installTask.version.convention(extension.version)
         }
 
         project.tasks.withType(SnykTask).configureEach {
-            if (extension.autoUpdate.get()) {
+            if (extension.autoDownload.get()) {
                 it.dependsOn(snykInstall)
             }
         }
+    }
+
+    private static void hookStrategyLifecycleTasks(Project project, SnykRootPluginExtension extension) {
+        def snykTestAll = project.tasks.register("snykTestAll")
+        def snykMonitorAll = project.tasks.register("snykMonitorAll")
+        def snykReportAll = project.tasks.register("snykReportAll")
 
         project.afterEvaluate {
+            def allSnykTestTasks = project.allprojects.collect { it.tasks.withType(Test) }
+            def allSnykMonitorTasks = project.allprojects.collect {
+                it.tasks.withType(Monitor)
+            }
+            def allSnyReportTasks = project.allprojects.collect { it.tasks.withType(Report) }
+
+            hookSnykTask(allSnykTestTasks, snykTestAll)
+            hookSnykTask(allSnykMonitorTasks, snykMonitorAll)
+            hookSnykTask(allSnyReportTasks, snykReportAll)
+
             def strategy = extension.strategies.getOrElse([])
             if (strategy.size() > 0) {
                 if (strategy.contains(MONITOR_PUBLISH)) {
-                    hookSnykTask(project.tasks.withType(Monitor), project.tasks.named(extension.publishTaskName.get()))
+                    hookSnykTask(allSnykMonitorTasks, project.tasks.named(extension.publishTaskName.get()))
                 }
                 if (strategy.contains(MONITOR_CHECK)) {
-                    hookSnykTask(project.tasks.withType(Monitor), project.tasks.named(extension.checkTaskName.get()))
+                    hookSnykTask(allSnykMonitorTasks, project.tasks.named(extension.checkTaskName.get()))
                 }
                 if (strategy.contains(TEST_CHECK)) {
-                    hookSnykTask(project.tasks.withType(Test), project.tasks.named(extension.checkTaskName.get()))
+                    hookSnykTask(allSnykTestTasks, project.tasks.named(extension.checkTaskName.get()))
                 }
                 if (strategy.contains(REPORT_CHECK)) {
-                    hookSnykTask(project.tasks.withType(Report), project.tasks.named(extension.checkTaskName.get()))
+                    hookSnykTask(allSnyReportTasks, project.tasks.named(extension.checkTaskName.get()))
                 }
             }
         }
@@ -296,6 +472,14 @@ class SnykPlugin implements Plugin<Project> {
     private static void hookSnykTask(TaskCollection<Task> snykTasks, TaskProvider<Task> baseTask) {
         baseTask.configure({
             it.dependsOn(snykTasks)
+        })
+    }
+
+    private static void hookSnykTask(List<TaskCollection<Task>> snykTasks, TaskProvider<Task> baseTask) {
+        baseTask.configure({ Task task ->
+            snykTasks.each {
+                task.dependsOn(it)
+            }
         })
     }
 }
