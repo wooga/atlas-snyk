@@ -18,21 +18,25 @@ package wooga.gradle.snyk.internal
 
 import org.gradle.api.Project
 import org.gradle.api.tasks.TaskProvider
-import wooga.gradle.snyk.SnykPluginExtension
+import wooga.gradle.snyk.ProjectRegistrationHandler
+import wooga.gradle.snyk.SnykRootPluginExtension
 import wooga.gradle.snyk.tasks.Monitor
 import wooga.gradle.snyk.tasks.Report
 import wooga.gradle.snyk.tasks.Test
 
-class DefaultSnykPluginExtension implements SnykPluginExtension {
+class DefaultSnykRootPluginExtension implements SnykRootPluginExtension {
+
     final TaskProvider<Test> snykTest
     final TaskProvider<Monitor> snykMonitor
     final TaskProvider<Report> snykReport
+    final ProjectRegistrationHandler registerProjectHandler
     final Project project
 
-    DefaultSnykPluginExtension(Project project, TaskProvider<Test> snykTest, TaskProvider<Monitor> snykMonitor, TaskProvider<Report> snykReport) {
+    DefaultSnykRootPluginExtension(Project project, TaskProvider<Test> snykTest, TaskProvider<Monitor> snykMonitor, TaskProvider<Report> snykReport, ProjectRegistrationHandler registerProjectHandler) {
         this.project = project
         this.snykTest = snykTest
         this.snykMonitor = snykMonitor
         this.snykReport = snykReport
+        this.registerProjectHandler = registerProjectHandler
     }
 }

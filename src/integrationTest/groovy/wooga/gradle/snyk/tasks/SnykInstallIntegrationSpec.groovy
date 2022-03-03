@@ -150,6 +150,13 @@ class SnykInstallIntegrationSpec extends SnykIntegrationSpec {
         def query = new PropertyQueryTaskWriter("${subjectUnderTestName}.${property}")
         query.write(buildFile)
 
+        and: "set minimal needed properties"
+        appendToSubjectTask("""
+        installationDir = file('build/installs')
+        executableName = 'snyk'
+        version = '1.0.0'
+        """.stripIndent())
+
         and: "tasks to execute"
         def tasks = [subjectUnderTestName, cliOption]
         if (rawValue != _) {
@@ -160,6 +167,7 @@ class SnykInstallIntegrationSpec extends SnykIntegrationSpec {
         and: "disable subject under test to no fail"
         appendToSubjectTask("enabled=false")
 
+
         when:
         def result = runTasksSuccessfully(*tasks)
 
@@ -167,10 +175,10 @@ class SnykInstallIntegrationSpec extends SnykIntegrationSpec {
         query.matches(result, expectedValue)
 
         where:
-        property          | cliOption            | rawValue                        | returnValue | type
-        "installationDir" | "--installation-dir" | osPath("/path/to/output.sarif") | _           | "CLIString"
-        "executableName"  | "--executable-name"  | "my-custom-snyk"                | _           | "CLIString"
-        "version"         | "--version"          | "22.11.33"                      | _           | "CLIString"
+        property          | cliOption            | rawValue                      | returnValue | type
+        "installationDir" | "--installation-dir" | osPath("/path/to/installDir") | _           | "CLIString"
+        "executableName"  | "--executable-name"  | "my-custom-snyk"              | _           | "CLIString"
+        "version"         | "--version"          | "22.11.33"                    | _           | "CLIString"
 
         value = wrapValueBasedOnType(rawValue, type, wrapValueFallback)
         expectedValue = returnValue == _ ? rawValue : returnValue

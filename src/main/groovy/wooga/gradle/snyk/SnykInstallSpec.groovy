@@ -40,7 +40,6 @@ trait SnykInstallSpec extends BaseSpec {
         installationDir.set(new File(value))
     }
 
-
     private final Property<String> executableName = objects.property(String)
 
     @Internal
