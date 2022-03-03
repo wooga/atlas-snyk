@@ -54,15 +54,18 @@ class SnykPlugin implements Plugin<Project>, ProjectRegistrationHandler {
     void apply(Project project) {
         this.project = project
         def tasks = project.tasks
+
+        // The install task will be re-used by all subprojects, since it contains the path to the downloaded executable
         def snykInstall = project.tasks.register(INSTALL_TASK_NAME, SnykInstall)
+        // Create the base tasks for the root project. These are then passed onto the extension
         def snykTest = project.tasks.register(TEST_TASK_NAME, Test)
         def snykReport = project.tasks.register(REPORT_TASK_NAME, Report)
         def snykMonitor = project.tasks.register(MONITOR_TASK_NAME, Monitor)
 
         // Create the extension
         def extension = createAndConfigureExtension(project, snykTest, snykMonitor, snykReport)
-        // Map the base task properties common to all snyk tasks
 
+        // Map the base task properties common to all snyk tasks
         project.tasks.withType(SnykTask).configureEach {
             mapExtensionPropertiesToBaseTask(it, extension, project)
         }
@@ -85,23 +88,34 @@ class SnykPlugin implements Plugin<Project>, ProjectRegistrationHandler {
         hookStrategyLifecycleTasks(project, extension)
     }
 
+    /**
+     * Registers tasks on the sub project. We don't have to do name-mangling
+     * since there's a separate namespace
+     */
     @Override
-    SnykPluginExtension registerProject(Project project, SnykRootPluginExtension parentExtension) {
-        def projectName = project.rootProject.name + project.path
-        def snykTest = project.tasks.register(TEST_TASK_NAME, Test)
-        def snykReport = project.tasks.register(REPORT_TASK_NAME, Report)
-        def snykMonitor = project.tasks.register(MONITOR_TASK_NAME, Monitor)
+    SnykPluginExtension registerProject(Project subProject, SnykRootPluginExtension parentExtension) {
+        def subProjectName = subProject.rootProject.name + subProject.path
+        def snykTest = subProject.tasks.register(TEST_TASK_NAME, Test)
+        def snykReport = subProject.tasks.register(REPORT_TASK_NAME, Report)
+        def snykMonitor = subProject.tasks.register(MONITOR_TASK_NAME, Monitor)
 
-        def extension = project.extensions.create(SnykPluginExtension, EXTENSION_NAME, DefaultSnykPluginExtension, project, snykTest, snykMonitor, snykReport)
+        def extension = subProject.extensions.create(SnykPluginExtension, EXTENSION_NAME, DefaultSnykPluginExtension, subProject, snykTest, snykMonitor, snykReport)
 
-        setupProjectRegistration(project, projectName, extension, parentExtension, snykTest, snykMonitor, snykReport)
-        registerTaskGroupAndDescription(project)
+        mapParentExtensionToExtension(subProject, subProjectName, extension, parentExtension, snykTest, snykMonitor, snykReport)
+        registerTaskGroupAndDescription(subProject)
+        // We don't want subprojects to re-use custom files that the parent sets
         extension.packageFile.set(null)
+        // Set the same working directory as the parent
         extension.workingDirectory.convention(parentExtension.workingDirectory)
-        extension.subProject.set(project.name)
+        // Assigning this will have the sub-project flag composed with the command line arguments
+        extension.subProject.set(subProject.name)
         extension
     }
 
+    /**
+     * Registers tasks from a subproject onto the root project. we have to mangle the generated tasks
+     * to differentiate them from the root + any others
+     */
     SnykPluginExtension registerProject(File projectFile, SnykRootPluginExtension parentExtension) {
         def relativeProjectFile = project.relativePath(projectFile)
         def projectName = project.name + ":" + relativeProjectFile
@@ -112,6 +126,7 @@ class SnykPlugin implements Plugin<Project>, ProjectRegistrationHandler {
             logger.info("register snyk project at path: ${projectFile.absolutePath}")
         }
 
+        // Replace all characters gradle doesn't like in task names with '.'
         def projectTaskName = relativeProjectFile.replaceAll(/[\/\\:"<>"?*]/, ".")
 
         def snykTest = project.tasks.register(TEST_TASK_NAME + "." + projectTaskName, Test)
@@ -119,7 +134,7 @@ class SnykPlugin implements Plugin<Project>, ProjectRegistrationHandler {
         def snykMonitor = project.tasks.register(MONITOR_TASK_NAME + "." + projectTaskName, Monitor)
 
         def extension = project.extensions.create(SnykPluginExtension, EXTENSION_NAME + "." + projectTaskName, DefaultSnykPluginExtension, project, snykTest, snykMonitor, snykReport)
-        setupProjectRegistration(project, projectName, extension, parentExtension, snykTest, snykMonitor, snykReport)
+        mapParentExtensionToExtension(project, projectName, extension, parentExtension, snykTest, snykMonitor, snykReport)
 
         if(!projectFile.exists()) {
             throw new FileNotFoundException("project file to be registered does not exist")
@@ -138,7 +153,7 @@ class SnykPlugin implements Plugin<Project>, ProjectRegistrationHandler {
         extension
     }
 
-    static void setupProjectRegistration(Project project, String projectName, SnykPluginExtension extension, SnykPluginExtension parentExtension, TaskProvider<Test> snykTest, TaskProvider<Monitor> snykMonitor, TaskProvider<Report> snykReport) {
+    static void mapParentExtensionToExtension(Project project, String projectName, SnykPluginExtension extension, SnykPluginExtension parentExtension, TaskProvider<Test> snykTest, TaskProvider<Monitor> snykMonitor, TaskProvider<Report> snykReport) {
         ([snykTest, snykReport, snykMonitor] as List<TaskProvider<SnykTask>>).each {
             it.configure {
                 mapExtensionPropertiesToBaseTask(it, extension, project)
@@ -156,6 +171,7 @@ class SnykPlugin implements Plugin<Project>, ProjectRegistrationHandler {
             mapExtensionPropertiesToMonitorTask(it, extension)
         }
 
+        // TODO: Refactor into looping through all the shared properties since this approach is bug-prone
         extension.projectName.convention(projectName)
         extension.snykPath.convention(parentExtension.snykPath)
         extension.executableName.convention(parentExtension.executableName)
