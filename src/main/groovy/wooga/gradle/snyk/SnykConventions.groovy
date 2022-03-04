@@ -343,4 +343,23 @@ class SnykConventions {
             "snyk.reportsDir",
             "reports"
     )
+
+    static final PropertyLookup debug = new PropertyLookup(
+            "SNYK_DEBUG",
+            "snyk.debug",
+            null
+    )
+
+    static final PropertyLookup autoDownload = new PropertyLookup(
+            "SNYK_AUTO_DOWNLOAD",
+            "snyk.autoDownload",
+            false
+    )
+
+    static final PropertyLookup autoUpdate = new PropertyLookup(
+            "SNYK_AUTO_UPDATE",
+            "snyk.update",
+            true
+    )
+
 }

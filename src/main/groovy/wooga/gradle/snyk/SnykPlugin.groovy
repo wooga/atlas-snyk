@@ -233,8 +233,8 @@ class SnykPlugin implements Plugin<Project>, ProjectRegistrationHandler {
         def extension = project.extensions.create(SnykRootPluginExtension, EXTENSION_NAME, DefaultSnykRootPluginExtension, project, snykTest, snykMonitor, snykReport, this)
 
         // TODO: Move to conventions?
-        extension.autoDownload.convention(false)
-        extension.autoUpdate.convention(true)
+        extension.autoDownload.convention(SnykConventions.autoDownload.getBooleanValueProvider(project))
+        extension.autoUpdate.convention(SnykConventions.autoUpdate.getBooleanValueProvider(project))
 
         extension.workingDirectory.set(project.layout.projectDirectory.asFile.absolutePath)
         extension.version.convention(SnykConventions.version.getStringValueProvider(project))
@@ -257,7 +257,7 @@ class SnykPlugin implements Plugin<Project>, ProjectRegistrationHandler {
         extension.token.convention(SnykConventions.token.getStringValueProvider(project))
 
         extension.insecure.convention(SnykConventions.insecure.getBooleanValueProvider(project))
-        extension.debug.convention(project.gradle.startParameter.logLevel == LogLevel.DEBUG)
+        extension.debug.convention(SnykConventions.debug.getBooleanValueProvider(project).orElse(project.gradle.startParameter.logLevel == LogLevel.DEBUG))
 
         extension.allProjects.convention(SnykConventions.allProjects.getBooleanValueProvider(project))
         extension.detectionDepth.convention(SnykConventions.detectionDepth.getStringValueProvider(project).map({ Integer.parseInt(it) }))

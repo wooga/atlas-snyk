@@ -17,8 +17,10 @@
 package wooga.gradle.snyk
 
 import com.wooga.gradle.PlatformUtils
+import com.wooga.gradle.PropertyLookup
 import com.wooga.gradle.test.IntegrationSpec
 import org.gradle.api.file.Directory
+import spock.lang.Shared
 import wooga.gradle.snyk.cli.*
 
 import java.nio.file.Files
@@ -46,8 +48,25 @@ class SnykIntegrationSpec extends IntegrationSpec {
         """.stripIndent()
     }
 
+    @Shared
+    List<String> declaredEnvironmentVariables
+
+    def setupSpec() {
+        declaredEnvironmentVariables = SnykConventions.declaredFields.findAll({it.type == PropertyLookup}).collect {
+            it.setAccessible(true)
+            def convention = (PropertyLookup) it.get()
+            it.setAccessible(false)
+            convention.environmentKeys as List<String>
+        }.flatten() as List<String>
+    }
+
     def setup() {
-        environmentVariables.set("SNYK_TOKEN", System.getenv("ATLAS_SNYK_INTEGRATION_TOKEN"))
+        // Clear out all environment variables which this plugin declares to have a clean test setup.
+        // This helps with false positives or true negatives on jenkins or development machines which set
+        // some of the environment variables globally
+        declaredEnvironmentVariables.each {
+            environmentVariables.set(it, null)
+        }
     }
 
     static wrapValueFallback = { Object rawValue, String type, Closure<String> fallback ->
