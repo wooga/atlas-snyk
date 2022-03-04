@@ -16,7 +16,7 @@
 
 package wooga.gradle.snyk.tasks
 
-
+import wooga.gradle.snyk.cli.options.CommonOption
 import wooga.gradle.snyk.cli.options.MonitorOption
 import wooga.gradle.snyk.cli.commands.MonitorProjectCommandSpec
 import wooga.gradle.snyk.cli.options.ProjectOption
@@ -33,6 +33,7 @@ class Monitor extends SnykTask implements MonitorProjectCommandSpec {
     @Override
     void addMainOptions(List<String> args) {
         args.add("monitor")
+        args.addAll(getMappedOptions(this, CommonOption))
         args.addAll(getMappedOptions(this, MonitorOption))
         args.addAll(getMappedOptions(this, TestOption))
         args.addAll(getMappedOptions(this, ProjectOption))
