@@ -56,6 +56,7 @@ abstract class SnykTaskIntegrationSpec<T extends SnykTask> extends SnykIntegrati
     }
 
     def setup() {
+        environmentVariables.set("SNYK_TOKEN", System.getenv("ATLAS_SNYK_INTEGRATION_TOKEN"))
         buildFile << """
         
         task $subjectUnderTestName(type: ${subjectUnderTestTypeName})
