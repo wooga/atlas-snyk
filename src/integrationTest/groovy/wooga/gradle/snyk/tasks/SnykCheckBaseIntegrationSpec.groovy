@@ -384,7 +384,7 @@ abstract class SnykCheckBaseIntegrationSpec<T extends SnykTask> extends SnykTask
         setSnykWrapper(true, subjectUnderTestName)
 
         and: "a set of properties being set onto the task"
-        if (setter.concat("file")){
+        if (setter.concat("file")) {
             createFile(mockFile)
         }
         def platformProjectDir = projectDir.path.split("\\\\").join("/")
@@ -436,6 +436,7 @@ abstract class SnykCheckBaseIntegrationSpec<T extends SnykTask> extends SnykTask
         "yarnWorkspaces=true"                                                 | "--yarn-workspaces"
         "skipUnresolved=true"                                                 | "--skip-unresolved"
         "command=${wrap("foobar")}"                                           | "--command=foobar"
+        "debug=true"                                                          | "-d"
 
         expected = flags.toString().empty ? commandName : "${commandName} ${flags}"
         mockFile = "foo.bar"

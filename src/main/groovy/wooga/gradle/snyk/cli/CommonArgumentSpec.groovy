@@ -19,11 +19,40 @@ package wooga.gradle.snyk.cli
 import com.wooga.gradle.BaseSpec
 import org.gradle.api.provider.Property
 import org.gradle.api.provider.Provider
+import org.gradle.api.provider.ProviderFactory
 import org.gradle.api.tasks.Input
+import org.gradle.api.tasks.Internal
 import org.gradle.api.tasks.Optional
 import org.gradle.api.tasks.options.Option
+import wooga.gradle.OptionMapper
+import wooga.gradle.snyk.cli.options.CommonOption
 
-trait CommonArgumentSpec extends BaseSpec {
+trait CommonArgumentSpec extends BaseSpec implements OptionMapper<CommonOption> {
+
+    @Internal
+    ProviderFactory getProviderFactory() {
+        getProviders()
+    }
+
+    @Override
+    String getOption(CommonOption option) {
+        def value = null
+
+        switch (option) {
+            case CommonOption.debug:
+                if (debug.present && debug.get()) {
+                    value = true
+                }
+                break
+        }
+
+        if (value != null) {
+            def output = option.compose(value)
+            return output
+        }
+        null
+    }
+
     private final Property<Boolean> insecure = objects.property(Boolean)
 
     @Input
