@@ -75,5 +75,6 @@ class Test extends SnykTask implements TestProjectCommandSpec {
         args.addAll(getMappedOptions(this, CommonOption))
         args.addAll(getMappedOptions(this, TestOption))
         args.addAll(getMappedOptions(this, ProjectOption))
+        args.addAll(getMappedOptions(this, CommonOption))
     }
 }

@@ -16,9 +16,10 @@
 
 package wooga.gradle.snyk.tasks
 
+
+import wooga.gradle.snyk.cli.commands.MonitorProjectCommandSpec
 import wooga.gradle.snyk.cli.options.CommonOption
 import wooga.gradle.snyk.cli.options.MonitorOption
-import wooga.gradle.snyk.cli.commands.MonitorProjectCommandSpec
 import wooga.gradle.snyk.cli.options.ProjectOption
 import wooga.gradle.snyk.cli.options.TestOption
 
