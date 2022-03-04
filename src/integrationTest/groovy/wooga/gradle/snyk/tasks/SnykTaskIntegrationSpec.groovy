@@ -111,7 +111,7 @@ abstract class SnykTaskIntegrationSpec<T extends SnykTask> extends SnykIntegrati
         ${object}.snykPath=${wrapValueBasedOnType(wrapperPath, Directory)}
         """.stripIndent()
 
-        if (setDummyToken){
+        if (setDummyToken) {
             buildFile << """
         ${object}.token=${wrapValueBasedOnType("foobar", String)}
         """.stripIndent()
@@ -205,7 +205,7 @@ abstract class SnykTaskIntegrationSpec<T extends SnykTask> extends SnykIntegrati
 
         when:
         def firstRun = runTasks(subjectUnderTestName)
-        def secondRun  = runTasks(subjectUnderTestName)
+        def secondRun = runTasks(subjectUnderTestName)
 
         then:
         firstRun.success
@@ -213,6 +213,4 @@ abstract class SnykTaskIntegrationSpec<T extends SnykTask> extends SnykIntegrati
         secondRun.success
         !secondRun.wasUpToDate(subjectUnderTestName)
     }
-
-
 }

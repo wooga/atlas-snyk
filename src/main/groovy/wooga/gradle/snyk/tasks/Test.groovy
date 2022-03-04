@@ -19,6 +19,7 @@ package wooga.gradle.snyk.tasks
 import org.gradle.api.tasks.Nested
 import org.gradle.internal.reflect.Instantiator
 import wooga.gradle.snyk.cli.commands.TestProjectCommandSpec
+import wooga.gradle.snyk.cli.options.CommonOption
 import wooga.gradle.snyk.cli.options.ProjectOption
 import wooga.gradle.snyk.cli.options.TestOption
 import wooga.gradle.snyk.report.SnykReports
@@ -71,7 +72,9 @@ class Test extends SnykTask implements TestProjectCommandSpec {
     @Override
     void addMainOptions(List<String> args) {
         args.add("test")
+        args.addAll(getMappedOptions(this, CommonOption))
         args.addAll(getMappedOptions(this, TestOption))
         args.addAll(getMappedOptions(this, ProjectOption))
+        args.addAll(getMappedOptions(this, CommonOption))
     }
 }
