@@ -410,7 +410,7 @@ abstract class SnykCheckBaseIntegrationSpec<T extends SnykTask> extends SnykTask
         "remoteRepoUrl=${wrap("foo.bar/pancakes")}"                           | "--remote-repo-url"
         "includeDevelopmentDependencies=true"                                 | "--dev"
         "orgName=${wrap("PANCAKES")}"                                         | "--org=PANCAKES"
-        "packageFile = ${wrapValueBasedOnType("#projectDir#/foo.bar", File)}" | "--file=${new File("#projectDir#/foo.bar").path}"
+        "packageFile = ${wrapValueBasedOnType("#projectDir#/foo.bar", File)}" | "--file=foo.bar"
         "ignorePolicy=true"                                                   | "--ignore-policy"
         "showVulnerablePaths=${wrapValueBasedOnType("all", String)}"          | "--show-vulnerable-paths=all"
         "targetReference=${wrapValueBasedOnType("foobar", String)}"           | "--target-reference"

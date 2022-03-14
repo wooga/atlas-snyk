@@ -19,6 +19,7 @@ package wooga.gradle.snyk.cli.commands
 
 import org.gradle.api.file.RegularFile
 import org.gradle.api.file.RegularFileProperty
+import org.gradle.api.internal.file.FileOperations
 import org.gradle.api.provider.ListProperty
 import org.gradle.api.provider.Property
 import org.gradle.api.provider.Provider
@@ -33,10 +34,17 @@ import wooga.gradle.snyk.cli.SeverityThresholdOption
 import wooga.gradle.snyk.cli.VulnerablePathsOption
 import wooga.gradle.snyk.cli.options.TestOption
 
+import javax.inject.Inject
+
 /**
  * Provides properties for the Test command
  */
 trait TestProjectCommandSpec extends ProjectCommandSpec implements OptionMapper<TestOption> {
+
+    @Inject
+    FileOperations getFileOperations() {
+        throw new UnsupportedOperationException();
+    }
 
     @Override
     String getOption(TestOption option) {
@@ -99,7 +107,7 @@ trait TestProjectCommandSpec extends ProjectCommandSpec implements OptionMapper<
 
             case TestOption.packageFile:
                 if (packageFile.present) {
-                    value = packageFile.asFile.get()
+                    value = new File(fileOperations.relativePath(packageFile.asFile.get()))
                 }
                 break
 
