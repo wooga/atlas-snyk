@@ -158,12 +158,50 @@ abstract class SnykPluginRegistrationIntegrationSpec extends SnykIntegrationSpec
         where:
         property      | rawValue               | type          | rawRootExtensionValue   || expectedValue
         "packageFile" | customPackageFileValue | "RegularFile" | "/path/to/some/package" || _
-        "projectName" | customProjectNameValue | "String"      | "someName"              || _
+        "projectName" | customProjectNameValue | "String"      | null                    || _
         "subProject"  | customSubProjectValue  | "String"      | "someSubProjectName"    || _
 
         value = (type != _) ? wrapValueBasedOnType(rawValue, type.toString(), wrapValueFallback) : rawValue
-        rootExtensionValue = (type != _) ? wrapValueBasedOnType(rawRootExtensionValue, type.toString(), wrapValueFallback) : rawRootExtensionValue
+        rootExtensionValue = (type != _ && rawRootExtensionValue) ? wrapValueBasedOnType(rawRootExtensionValue, type.toString(), wrapValueFallback) : rawRootExtensionValue
         testValue = (expectedValue == _) ? rawValue : expectedValue
+    }
+
+    @Unroll("projectName for registered project is based on #message")
+    def "projectName for registered project"() {
+        given: "a registered gradle sub project"
+        setupProject()
+        buildFile << """
+        ${extensionName} {
+            ${getRegisterProjectInvocation(packageId)}
+            projectName = ${rootProjectNameValue}
+        }
+        """.stripIndent()
+
+        when:
+        def query = new PropertyQueryTaskWriter("project.extensions.getByName('${generatedExtensionName}').${property}",
+                ".getOrNull()",
+                PropertyUtils.toCamelCase("query_${generatedExtensionName}.${property}")
+        )
+        query.write(registeredBuildFile)
+        def result = runTasksSuccessfully(query.taskName)
+
+        then:
+        def v = (testValue && String.isInstance(testValue)) ? testValue
+                .replace("#projectName#", moduleName)
+                .replace("#packageName#", packageId)
+                .replace("#subProjectName#", packageId)
+                .replace("#projectDir#", projectDir.absolutePath) : testValue
+        query.matches(result, v)
+
+        where:
+        rootProjectName   || expectedSubProjectName
+        "testProjectRoot" || "${rootProjectName}:#packageName#"
+        null              || "#projectName#:#packageName#"
+
+        property = "projectName"
+        rootProjectNameValue = (rootProjectName) ? wrapValueBasedOnType(rootProjectName, String) : null
+        testValue = expectedSubProjectName.toString()
+        message = rootProjectName ? "root project 'projectName' property value if set" : "root project gradle project name when 'projectName' property is not set"
     }
 
     @Unroll

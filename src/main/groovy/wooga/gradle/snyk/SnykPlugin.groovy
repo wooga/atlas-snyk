@@ -21,6 +21,7 @@ import org.gradle.api.Project
 import org.gradle.api.Task
 import org.gradle.api.logging.LogLevel
 import org.gradle.api.logging.Logging
+import org.gradle.api.provider.Provider
 import org.gradle.api.tasks.TaskCollection
 import org.gradle.api.tasks.TaskProvider
 import org.slf4j.Logger
@@ -94,7 +95,7 @@ class SnykPlugin implements Plugin<Project>, ProjectRegistrationHandler {
      */
     @Override
     SnykPluginExtension registerProject(Project subProject, SnykRootPluginExtension parentExtension) {
-        def subProjectName = subProject.rootProject.name + subProject.path
+        def subProjectName = parentExtension.projectName.orElse(subProject.rootProject.name).map({it + subProject.path})
         def snykTest = subProject.tasks.register(TEST_TASK_NAME, Test)
         def snykReport = subProject.tasks.register(REPORT_TASK_NAME, Report)
         def snykMonitor = subProject.tasks.register(MONITOR_TASK_NAME, Monitor)
@@ -118,7 +119,7 @@ class SnykPlugin implements Plugin<Project>, ProjectRegistrationHandler {
      */
     SnykPluginExtension registerProject(File projectFile, SnykRootPluginExtension parentExtension) {
         def relativeProjectFile = project.relativePath(projectFile)
-        def projectName = project.name + ":" + relativeProjectFile
+        def projectName = parentExtension.projectName.orElse(project.name).map({it + ":" + relativeProjectFile})
 
         if (projectFile.isFile()) {
             logger.info("register snyk project file: ${projectFile.absolutePath}")
@@ -153,7 +154,7 @@ class SnykPlugin implements Plugin<Project>, ProjectRegistrationHandler {
         extension
     }
 
-    static void mapParentExtensionToExtension(Project project, String projectName, SnykPluginExtension extension, SnykPluginExtension parentExtension, TaskProvider<Test> snykTest, TaskProvider<Monitor> snykMonitor, TaskProvider<Report> snykReport) {
+    static void mapParentExtensionToExtension(Project project, Provider<String> projectName, SnykPluginExtension extension, SnykPluginExtension parentExtension, TaskProvider<Test> snykTest, TaskProvider<Monitor> snykMonitor, TaskProvider<Report> snykReport) {
         ([snykTest, snykReport, snykMonitor] as List<TaskProvider<SnykTask>>).each {
             it.configure {
                 mapExtensionPropertiesToBaseTask(it, extension, project)
