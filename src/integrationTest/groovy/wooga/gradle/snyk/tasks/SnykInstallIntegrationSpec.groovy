@@ -1,15 +1,28 @@
 package wooga.gradle.snyk.tasks
 
+import com.wooga.gradle.PlatformUtils
 import com.wooga.gradle.test.PropertyQueryTaskWriter
 import org.apache.commons.codec.digest.DigestUtils
+import org.junit.Rule
+import org.junit.rules.TestRule
+import org.mockserver.integration.ClientAndServer
+import org.mockserver.logging.MockServerLogger
+import org.mockserver.socket.tls.KeyStoreFactory
 import spock.lang.IgnoreIf
 import spock.lang.Unroll
+import spock.util.environment.RestoreSystemProperties
 import wooga.gradle.snyk.SnykIntegrationSpec
 import wooga.gradle.snyk.SnykPlugin
+
+import javax.net.ssl.HttpsURLConnection
 
 import static com.wooga.gradle.PlatformUtils.*
 import static com.wooga.gradle.test.PropertyUtils.toProviderSet
 import static com.wooga.gradle.test.PropertyUtils.toSetter
+import static org.mockserver.integration.ClientAndServer.startClientAndServer
+import static org.mockserver.model.HttpOverrideForwardedRequest.forwardOverriddenRequest
+import static org.mockserver.model.HttpRequest.request
+import static org.mockserver.stop.Stop.stopQuietly
 
 class SnykInstallIntegrationSpec extends SnykIntegrationSpec {
 
@@ -35,7 +48,7 @@ class SnykInstallIntegrationSpec extends SnykIntegrationSpec {
         """.stripIndent()
 
         and: "a future snyk executable"
-        def expectedSnykFile = new File("${getGradleUserHome()}/atlas-snyk/v1.840.0/${isWindows() ? "snyk.exe" : "snyk"}")
+        File expectedSnykFile = new File("${getGradleUserHome()}/atlas-snyk/latest/${isWindows() ? "snyk.exe" : "snyk"}")
         if (expectedSnykFile.exists()) {
             expectedSnykFile.delete()
         }
@@ -48,11 +61,114 @@ class SnykInstallIntegrationSpec extends SnykIntegrationSpec {
 
         expectedSnykFile.file
         expectedSnykFile.exists()
+        expectedSnykFile.canExecute()
 
         def process = Runtime.runtime.exec([expectedSnykFile.absolutePath, "--version"] as String[])
         process.waitFor() == 0
     }
 
+    @RestoreSystemProperties
+    def "auto updates preinstalled version when version is set to 'latest'"() {
+        given: "a snyk install task with specified parameters"
+        appendToSubjectTask(buildGradleSnykInstallTask(version, new File(projectDir, installDir), executableName))
+        jvmArguments << "-Xms512m -Xmx1g"
+
+        and: "a proxy server to mock a specific result"
+        // ensure all connection using HTTPS will use the SSL context defined by
+        // MockServer to allow dynamically generated certificates to be accepted
+        HttpsURLConnection.setDefaultSSLSocketFactory(new KeyStoreFactory(new MockServerLogger()).sslContext().getSocketFactory());
+        def mockServer = startClientAndServer()
+
+        System.setProperty("static.snyk.io.baseUrl", "https://localhost:${mockServer.getPort()}")
+        mockServer.reset()
+
+        and: "forward latest call to old release json"
+        mockServer
+                .when(
+                        request()
+                                .withPath("/cli/${version}/release.json")
+                )
+                .forward(
+                        forwardOverriddenRequest(
+                                request()
+                                        .withPath("/cli/v${mockVersion}/release.json")
+                                        .withHeader("Host", "static.snyk.io")
+                        )
+                )
+
+        and: "a proxy setup for any path not /cli/latest/release.json"
+        proxyAllSnykRequests(mockServer)
+        //Opens a webpage with logs and other useful information about the current proxy/mock server
+        //mockServer.openUI()
+
+        and: "a future snyk file"
+        def expectedSnykFile = new File(projectDir, "${installDir}/${normalizedExecutableName}")
+        assert !expectedSnykFile.exists()
+
+        when: "a first run to install snyk"
+        runTasksSuccessfully(subjectUnderTestName)
+
+        then:
+        expectedSnykFile.exists()
+        fetchVersion(expectedSnykFile) == mockVersion
+
+        when: "latest returns latest version"
+        //clear the forward
+        mockServer.clear(request().withPath("/cli/${version}/release.json"))
+        mockServer.clear(request())
+        proxyAllSnykRequests(mockServer)
+
+        def result = runTasksSuccessfully(subjectUnderTestName)
+
+        then:
+        result.wasExecuted(subjectUnderTestName)
+        !result.wasUpToDate(subjectUnderTestName)
+        expectedSnykFile.file
+        expectedSnykFile.canExecute()
+        fetchVersion(expectedSnykFile)
+        fetchVersion(expectedSnykFile) != mockVersion
+
+        cleanup:
+        stopQuietly(mockServer)
+
+        where:
+        version  | mockVersion | executableName | installDir
+        "latest" | "1.837.0"   | "snyk"         | "build/snyk"
+        normalizedExecutableName = isWindows() ? "${executableName}.exe" : executableName
+    }
+
+    private proxyAllSnykRequests(ClientAndServer mockServer) {
+        mockServer
+                .when(
+                        request()
+                )
+                .forward(
+                        forwardOverriddenRequest(
+                                request()
+                                        .withHeader("Host", "static.snyk.io")
+                        )
+                )
+    }
+
+    def "task is up-to-date when latest fetches the same version"() {
+        given: "a snyk install task with specified parameters"
+        appendToSubjectTask(buildGradleSnykInstallTask("latest", new File(projectDir, "snyk"), "snyk"))
+
+        when:
+        def firstRunResult = runTasksSuccessfully(subjectUnderTestName)
+
+        then:
+        firstRunResult.wasExecuted(subjectUnderTestName)
+        !firstRunResult.wasUpToDate(subjectUnderTestName)
+        !firstRunResult.wasSkipped(subjectUnderTestName)
+
+        when:
+        def secondRunResult = runTasksSuccessfully(subjectUnderTestName)
+        then:
+        secondRunResult.wasExecuted(subjectUnderTestName)
+        secondRunResult.wasUpToDate(subjectUnderTestName)
+        !secondRunResult.wasSkipped(subjectUnderTestName)
+    }
 
     @IgnoreIf({ !isMac() })
     @Unroll("installs valid snyk file from version #version on target directory for macOS")
@@ -253,5 +369,16 @@ class SnykInstallIntegrationSpec extends SnykIntegrationSpec {
             gradleUserHomeEnv = "${getUnixUserHomePath()}/.gradle"
         }
         new File(gradleUserHomeEnv)
+    }
+
+    static String fetchVersion(File executable) {
+        if (executable.exists() && executable.canExecute()) {
+            def stdErr = new ByteArrayOutputStream()
+            def stdOut = new ByteArrayOutputStream()
+            "${executable} --version".execute().waitForProcessOutput(stdOut, stdErr)
+
+            return stdOut.toString().split(' ').first().trim()
+        }
+        null
     }
 }

@@ -35,7 +35,7 @@ class SnykConventions {
     static final PropertyLookup version = new PropertyLookup(
             "SNYK_VERSION",
             "snyk.version",
-            "v1.840.0"
+            "latest"
     )
 
     static final PropertyLookup installationDir = new PropertyLookup(
@@ -355,11 +355,4 @@ class SnykConventions {
             "snyk.autoDownload",
             false
     )
-
-    static final PropertyLookup autoUpdate = new PropertyLookup(
-            "SNYK_AUTO_UPDATE",
-            "snyk.update",
-            true
-    )
-
 }

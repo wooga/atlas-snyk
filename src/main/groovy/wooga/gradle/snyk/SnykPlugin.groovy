@@ -234,7 +234,6 @@ class SnykPlugin implements Plugin<Project>, ProjectRegistrationHandler {
 
         // TODO: Move to conventions?
         extension.autoDownload.convention(SnykConventions.autoDownload.getBooleanValueProvider(project))
-        extension.autoUpdate.convention(SnykConventions.autoUpdate.getBooleanValueProvider(project))
 
         extension.workingDirectory.set(project.layout.projectDirectory.asFile.absolutePath)
         extension.version.convention(SnykConventions.version.getStringValueProvider(project))

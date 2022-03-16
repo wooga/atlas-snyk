@@ -40,23 +40,6 @@ trait SnykRootPluginExtension implements SnykPluginExtension, SnykInstallSpec, S
         autoDownload.set(value)
     }
 
-    private final Property<Boolean> autoUpdate = objects.property(Boolean)
-
-    /**
-     * @return Whether to auto update the snyk executable if present
-     */
-    Property<Boolean> getAutoUpdate() {
-        autoUpdate
-    }
-
-    void setAutoUpdate(Provider<Boolean> value) {
-        autoUpdate.set(value)
-    }
-
-    void setAutoUpdate(Boolean value) {
-        autoUpdate.set(value)
-    }
-
     abstract ProjectRegistrationHandler getRegisterProjectHandler()
 
     /**
