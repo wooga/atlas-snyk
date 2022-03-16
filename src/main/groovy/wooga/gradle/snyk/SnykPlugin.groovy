@@ -95,7 +95,7 @@ class SnykPlugin implements Plugin<Project>, ProjectRegistrationHandler {
      */
     @Override
     SnykPluginExtension registerProject(Project subProject, SnykRootPluginExtension parentExtension) {
-        def subProjectName = parentExtension.projectName.orElse(subProject.rootProject.name).map({it + subProject.path})
+        def subProjectName = parentExtension.projectName.orElse(subProject.rootProject.name).map({ it + subProject.path })
         def snykTest = subProject.tasks.register(TEST_TASK_NAME, Test)
         def snykReport = subProject.tasks.register(REPORT_TASK_NAME, Report)
         def snykMonitor = subProject.tasks.register(MONITOR_TASK_NAME, Monitor)
@@ -119,7 +119,7 @@ class SnykPlugin implements Plugin<Project>, ProjectRegistrationHandler {
      */
     SnykPluginExtension registerProject(File projectFile, SnykRootPluginExtension parentExtension) {
         def relativeProjectFile = project.relativePath(projectFile)
-        def projectName = parentExtension.projectName.orElse(project.name).map({it + ":" + relativeProjectFile})
+        def projectName = parentExtension.projectName.orElse(project.name).map({ it + ":" + relativeProjectFile })
 
         if (projectFile.isFile()) {
             logger.info("register snyk project file: ${projectFile.absolutePath}")
@@ -137,7 +137,7 @@ class SnykPlugin implements Plugin<Project>, ProjectRegistrationHandler {
         def extension = project.extensions.create(SnykPluginExtension, EXTENSION_NAME + "." + projectTaskName, DefaultSnykPluginExtension, project, snykTest, snykMonitor, snykReport)
         mapParentExtensionToExtension(project, projectName, extension, parentExtension, snykTest, snykMonitor, snykReport)
 
-        if(!projectFile.exists()) {
+        if (!projectFile.exists()) {
             throw new FileNotFoundException("project file to be registered does not exist")
         }
 
@@ -270,6 +270,7 @@ class SnykPlugin implements Plugin<Project>, ProjectRegistrationHandler {
         extension.includeDevelopmentDependencies.convention(SnykConventions.includeDevelopmentDependencies.getBooleanValueProvider(project))
         extension.orgName.convention(SnykConventions.orgName.getStringValueProvider(project))
         extension.packageFile.convention(SnykConventions.packageFile.getFileValueProvider(project))
+        extension.packageManager.convention(SnykConventions.packageManager.getStringValueProvider(project))
         extension.ignorePolicy.convention(SnykConventions.ignorePolicy.getBooleanValueProvider(project))
         extension.showVulnerablePaths.convention(SnykConventions.showVulnerablePaths.getStringValueProvider(project).map({
             VulnerablePathsOption.valueOf(it.trim())
@@ -373,6 +374,7 @@ class SnykPlugin implements Plugin<Project>, ProjectRegistrationHandler {
         task.includeDevelopmentDependencies.convention(extension.includeDevelopmentDependencies)
         task.orgName.convention(extension.orgName)
         task.packageFile.convention(extension.packageFile)
+        task.packageManager.convention(extension.packageManager)
         task.ignorePolicy.convention(extension.ignorePolicy)
         task.showVulnerablePaths.convention(extension.showVulnerablePaths)
         task.projectName.convention(extension.projectName)
