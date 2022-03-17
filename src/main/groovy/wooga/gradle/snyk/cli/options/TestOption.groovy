@@ -28,6 +28,7 @@ enum TestOption implements OptionSpec {
     includeDevelopmentDependencies("--dev", new SnykBooleanOption()),
     orgName("--org", new SnykStringOption()),
     packageFile("--file", new SnykFileOption()),
+    packageManager("--package-manager", new SnykStringOption()),
     ignorePolicy('--ignore-policy', new SnykBooleanOption()),
     showVulnerablePaths("--show-vulnerable-paths", new SnykEnumOption(VulnerablePathsOption.class)),
     targetReference("--target-reference", new SnykStringOption()),

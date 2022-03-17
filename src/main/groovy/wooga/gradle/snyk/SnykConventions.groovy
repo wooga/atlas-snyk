@@ -116,6 +116,12 @@ class SnykConventions {
             null
     )
 
+    static final PropertyLookup packageManager = new PropertyLookup(
+            "SNYK_PACKAGE_MANAGER",
+            "snyk.packageManager",
+            null
+    )
+
     static final PropertyLookup ignorePolicy = new PropertyLookup(
             "SNYK_IGNORE_POLICY",
             "snyk.ignorePolicy",

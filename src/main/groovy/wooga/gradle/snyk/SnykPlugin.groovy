@@ -282,6 +282,7 @@ class SnykPlugin implements Plugin<Project>, ProjectRegistrationHandler {
         extension.includeDevelopmentDependencies.convention(SnykConventions.includeDevelopmentDependencies.getBooleanValueProvider(project))
         extension.orgName.convention(SnykConventions.orgName.getStringValueProvider(project))
         extension.packageFile.convention(SnykConventions.packageFile.getFileValueProvider(project))
+        extension.packageManager.convention(SnykConventions.packageManager.getStringValueProvider(project))
         extension.ignorePolicy.convention(SnykConventions.ignorePolicy.getBooleanValueProvider(project))
         extension.showVulnerablePaths.convention(SnykConventions.showVulnerablePaths.getStringValueProvider(project).map({
             VulnerablePathsOption.valueOf(it.trim())
@@ -385,6 +386,7 @@ class SnykPlugin implements Plugin<Project>, ProjectRegistrationHandler {
         task.includeDevelopmentDependencies.convention(extension.includeDevelopmentDependencies)
         task.orgName.convention(extension.orgName)
         task.packageFile.convention(extension.packageFile)
+        task.packageManager.convention(extension.packageManager)
         task.ignorePolicy.convention(extension.ignorePolicy)
         task.showVulnerablePaths.convention(extension.showVulnerablePaths)
         task.projectName.convention(extension.projectName)

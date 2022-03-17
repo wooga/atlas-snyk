@@ -111,6 +111,12 @@ trait TestProjectCommandSpec extends ProjectCommandSpec implements OptionMapper<
                 }
                 break
 
+            case TestOption.packageManager:
+                if (packageManager.present) {
+                    value = packageManager.get()
+                }
+                break
+
             case TestOption.ignorePolicy:
                 if (ignorePolicy.present && ignorePolicy.get()) {
                     value = true
@@ -396,6 +402,26 @@ trait TestProjectCommandSpec extends ProjectCommandSpec implements OptionMapper<
     """)
     void packageFile(String value) {
         packageFile.set(layout.projectDirectory.file(value))
+    }
+
+    private final Property<String> packageManager = objects.property(String)
+
+    @Input
+    @Optional
+    @Option(option = "package-manager", description = """
+    Specify the name of the package manager when the filename specified with the --file=<FILE> option is not standard.
+    This allows Snyk to find the file.
+    """)
+    Property<String> getPackageManager() {
+        packageManager
+    }
+
+    void setPackageManager(Provider<String> value) {
+        packageManager.set(value)
+    }
+
+    void setPackageManager(String value) {
+        packageManager.set(value)
     }
 
     private final Property<Boolean> ignorePolicy = objects.property(Boolean)

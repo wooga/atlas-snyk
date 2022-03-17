@@ -99,6 +99,9 @@ abstract class SnykCheckBaseIntegrationSpec<T extends SnykTask> extends SnykTask
 
         "yarnWorkspaces"                 | "--yarn-workspaces"                | _                                          | true        | "Boolean"
 
+        "packageFile"                    | "--file"                           | osPath("/path/to/package")                 | _           | "CLIString"
+        "packageManager"                 | "--package-manager"                | "someValue"                                | _           | "CLIString"
+
         value = wrapValueBasedOnType(rawValue, type, wrapValueFallback)
         expectedValue = returnValue == _ ? rawValue : returnValue
     }
@@ -170,6 +173,11 @@ abstract class SnykCheckBaseIntegrationSpec<T extends SnykTask> extends SnykTask
         "packageFile"                    | toSetter(property)      | osPath("/path/to/file3")                                    | _                                                 | "File"
         "packageFile"                    | toSetter(property)      | osPath("/path/to/file4")                                    | _                                                 | "Provider<RegularFile>"
         "packageFile"                    | property                | osPath("/path/to/file5")                                    | _                                                 | "String"
+
+        "packageManager"                 | toProviderSet(property) | "nuget"                                                     | _                                                 | "String"
+        "packageManager"                 | toProviderSet(property) | "paket"                                                     | _                                                 | "Provider<String>"
+        "packageManager"                 | toSetter(property)      | "npm"                                                       | _                                                 | "String"
+        "packageManager"                 | toSetter(property)      | "gradle"                                                    | _                                                 | "Provider<String>"
 
         "ignorePolicy"                   | toProviderSet(property) | true                                                        | _                                                 | "Boolean"
         "ignorePolicy"                   | toProviderSet(property) | false                                                       | _                                                 | "Provider<Boolean>"
@@ -351,6 +359,7 @@ abstract class SnykCheckBaseIntegrationSpec<T extends SnykTask> extends SnykTask
         "--exclude"                        | _
         "--fail-on"                        | _
         "--file"                           | _
+        "--package-manager"                | _
         "--ignore-policy"                  | _
         "--gradle-init-script"             | _
         "--json"                           | _
@@ -411,6 +420,7 @@ abstract class SnykCheckBaseIntegrationSpec<T extends SnykTask> extends SnykTask
         "includeDevelopmentDependencies=true"                                 | "--dev"
         "orgName=${wrap("PANCAKES")}"                                         | "--org=PANCAKES"
         "packageFile = ${wrapValueBasedOnType("#projectDir#/foo.bar", File)}" | "--file=foo.bar"
+        "packageManager = ${wrapValueBasedOnType("nuget", String)}"           | "--package-manager=nuget"
         "ignorePolicy=true"                                                   | "--ignore-policy"
         "showVulnerablePaths=${wrapValueBasedOnType("all", String)}"          | "--show-vulnerable-paths=all"
         "targetReference=${wrapValueBasedOnType("foobar", String)}"           | "--target-reference"
