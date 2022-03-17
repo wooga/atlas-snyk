@@ -48,6 +48,8 @@ class SnykPlugin implements Plugin<Project>, ProjectRegistrationHandler {
     static final String TEST_CHECK = "test_check"
     static final String REPORT_CHECK = "report_check"
     static final String MONITOR_PUBLISH = "monitor_publish"
+    static final String TEST_PUBLISH = "test_publish"
+    static final String REPORT_PUBLISH = "report_publish"
 
     private Project project
 
@@ -71,12 +73,14 @@ class SnykPlugin implements Plugin<Project>, ProjectRegistrationHandler {
             mapExtensionPropertiesToBaseTask(it, extension, project)
         }
         // Map the properties specific to certain tasks
-        tasks.withType(Test).configureEach {
-            mapExtensionPropertiesToTestTask(it, extension)
-            it.reports.sarif.setEnabled(extension.sarifReportsEnabled)
-            it.reports.json.setEnabled(extension.jsonReportsEnabled)
-            it.reports.sarif.outputLocation.convention(extension.reportsDir.file(it.name + "/" + it.name + "." + reports.sarif.name))
-            it.reports.json.outputLocation.convention(extension.reportsDir.file(it.name + "/" + it.name + "." + reports.json.name))
+
+        List<Class<SnykCheckBase>> checkTypes = new ArrayList<>()
+        checkTypes << Test << Report
+
+        checkTypes.each {
+            tasks.withType(it).configureEach {
+                mapExtensionPropertiesToCheckBaseTask(it, extension)
+            }
         }
 
         tasks.withType(Monitor).configureEach {
@@ -89,13 +93,21 @@ class SnykPlugin implements Plugin<Project>, ProjectRegistrationHandler {
         hookStrategyLifecycleTasks(project, extension)
     }
 
+    static void mapExtensionPropertiesToCheckBaseTask(SnykCheckBase task, SnykPluginExtension extension) {
+        mapExtensionPropertiesToTestTask(task, extension)
+        task.reports.sarif.setEnabled(extension.sarifReportsEnabled)
+        task.reports.json.setEnabled(extension.jsonReportsEnabled)
+        task.reports.sarif.outputLocation.convention(extension.reportsDir.file(task.name + "/" + task.name + "." + task.reports.sarif.name))
+        task.reports.json.outputLocation.convention(extension.reportsDir.file(task.name + "/" + task.name + "." + task.reports.json.name))
+    }
+
     /**
      * Registers tasks on the sub project. We don't have to do name-mangling
      * since there's a separate namespace
      */
     @Override
     SnykPluginExtension registerProject(Project subProject, SnykRootPluginExtension parentExtension) {
-        def subProjectName = parentExtension.projectName.orElse(subProject.rootProject.name).map({it + subProject.path})
+        def subProjectName = parentExtension.projectName.orElse(subProject.rootProject.name).map({ it + subProject.path })
         def snykTest = subProject.tasks.register(TEST_TASK_NAME, Test)
         def snykReport = subProject.tasks.register(REPORT_TASK_NAME, Report)
         def snykMonitor = subProject.tasks.register(MONITOR_TASK_NAME, Monitor)
@@ -119,7 +131,7 @@ class SnykPlugin implements Plugin<Project>, ProjectRegistrationHandler {
      */
     SnykPluginExtension registerProject(File projectFile, SnykRootPluginExtension parentExtension) {
         def relativeProjectFile = project.relativePath(projectFile)
-        def projectName = parentExtension.projectName.orElse(project.name).map({it + ":" + relativeProjectFile})
+        def projectName = parentExtension.projectName.orElse(project.name).map({ it + ":" + relativeProjectFile })
 
         if (projectFile.isFile()) {
             logger.info("register snyk project file: ${projectFile.absolutePath}")
@@ -137,7 +149,7 @@ class SnykPlugin implements Plugin<Project>, ProjectRegistrationHandler {
         def extension = project.extensions.create(SnykPluginExtension, EXTENSION_NAME + "." + projectTaskName, DefaultSnykPluginExtension, project, snykTest, snykMonitor, snykReport)
         mapParentExtensionToExtension(project, projectName, extension, parentExtension, snykTest, snykMonitor, snykReport)
 
-        if(!projectFile.exists()) {
+        if (!projectFile.exists()) {
             throw new FileNotFoundException("project file to be registered does not exist")
         }
 
@@ -472,6 +484,13 @@ class SnykPlugin implements Plugin<Project>, ProjectRegistrationHandler {
                 if (strategy.contains(MONITOR_PUBLISH)) {
                     hookSnykTask(allSnykMonitorTasks, project.tasks.named(extension.publishTaskName.get()))
                 }
+                if (strategy.contains(TEST_PUBLISH)) {
+                    hookSnykTask(allSnykTestTasks, project.tasks.named(extension.publishTaskName.get()))
+                }
+                if (strategy.contains(REPORT_PUBLISH)) {
+                    hookSnykTask(allSnyReportTasks, project.tasks.named(extension.publishTaskName.get()))
+                }
+
                 if (strategy.contains(MONITOR_CHECK)) {
                     hookSnykTask(allSnykMonitorTasks, project.tasks.named(extension.checkTaskName.get()))
                 }

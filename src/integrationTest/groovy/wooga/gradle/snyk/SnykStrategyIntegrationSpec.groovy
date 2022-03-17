@@ -4,6 +4,7 @@ import com.wooga.gradle.test.PropertyLocation
 import com.wooga.gradle.test.PropertyQueryTaskWriter
 import spock.lang.Unroll
 import wooga.gradle.snyk.tasks.Monitor
+import wooga.gradle.snyk.tasks.Report
 import wooga.gradle.snyk.tasks.Test
 
 import static com.wooga.gradle.test.PropertyUtils.*
@@ -126,6 +127,9 @@ class SnykStrategyIntegrationSpec extends SnykIntegrationSpec {
         snykTaskName  | snykTaskNames                         | snykTaskType | hookTaskName | strategy
         "snykMonitor" | ["snykMonitor2", "snykMonitorCustom"] | Monitor      | "check"      | ["monitor_check"]
         "snykTest"    | ["snykTest2", "snykTestCustom"]       | Test         | "check"      | ["test_check"]
+        "snykReport"  | ["snykReport2", "snykReportCustom"]   | Report       | "check"      | ["report_check"]
         "snykMonitor" | ["snykMonitor2", "snykMonitorCustom"] | Monitor      | "publish"    | ["monitor_publish"]
+        "snykTest"    | ["snykTest2", "snykTestCustom"]       | Test         | "publish"    | ["test_publish"]
+        "snykReport"  | ["snykReport2", "snykReportCustom"]   | Report       | "publish"    | ["report_publish"]
     }
 }
