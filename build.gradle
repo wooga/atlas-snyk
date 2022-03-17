@@ -44,7 +44,7 @@ github {
 dependencies {
     implementation 'commons-codec:commons-codec:1.15'
     implementation 'org.ysb33r.gradle:grolifant60:1.3.2'
-    implementation 'com.wooga.gradle:gradle-commons:0.4.1'
+    implementation 'com.wooga.gradle:gradle-commons:[1,2)'
     testImplementation 'com.wooga.gradle:gradle-commons-test:0.3.0'
     testImplementation 'org.mock-server:mockserver-junit-rule:5.12.0'
 }
