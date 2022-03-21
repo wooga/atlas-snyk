@@ -31,6 +31,10 @@ abstract class SnykPluginRegistrationIntegrationSpec extends SnykIntegrationSpec
 
     abstract String getCustomSubProjectValue()
 
+    String getCustomReportsDirValue() {
+        "#subProjectDir#${File.separator}build${File.separator}reports"
+    }
+
     @Unroll
     def "can configure property #property for registered project"() {
         given: "a registered gradle sub project"
@@ -73,9 +77,7 @@ abstract class SnykPluginRegistrationIntegrationSpec extends SnykIntegrationSpec
         "targetReference"                | "reference1"                         | "String"                          || _
         "policyPath"                     | osPath("/path/to/policy1")           | "RegularFile"                     || _
         "printJson"                      | true                                 | "Boolean"                         || _
-        "jsonOutputPath"                 | osPath("/path/to/json1")             | "RegularFile"                     || _
         "printSarif"                     | true                                 | "Boolean"                         || _
-        "sarifOutputPath"                | osPath("/path/to/sarif1")            | "RegularFile"                     || _
         "severityThreshold"              | SeverityThresholdOption.critical     | "SeverityThresholdOption"         || _
         "failOn"                         | FailOnOption.all                     | "FailOnOption"                    || _
         "compilerArguments"              | ['--flag1']                          | "List<String>"                    || _
@@ -189,15 +191,9 @@ abstract class SnykPluginRegistrationIntegrationSpec extends SnykIntegrationSpec
         "snykTest"    | "printJson"                      | true                                 | "Boolean"                         | property              | _          || _
         "snykReport"  | "printJson"                      | true                                 | "Boolean"                         | property              | _          || _
         "snykMonitor" | "printJson"                      | true                                 | "Boolean"                         | property              | _          || _
-        "snykTest"    | "jsonOutputPath"                 | osPath("/path/to/json1")             | "RegularFile"                     | property              | _          || _
-        "snykReport"  | "jsonOutputPath"                 | osPath("/path/to/json2")             | "RegularFile"                     | property              | _          || _
-        "snykMonitor" | "jsonOutputPath"                 | osPath("/path/to/json3")             | "RegularFile"                     | property              | _          || _
         "snykTest"    | "printSarif"                     | true                                 | "Boolean"                         | property              | _          || _
         "snykReport"  | "printSarif"                     | true                                 | "Boolean"                         | property              | _          || _
         "snykMonitor" | "printSarif"                     | true                                 | "Boolean"                         | property              | _          || _
-        "snykTest"    | "sarifOutputPath"                | osPath("/path/to/sarif1")            | "RegularFile"                     | property              | _          || _
-        "snykReport"  | "sarifOutputPath"                | osPath("/path/to/sarif2")            | "RegularFile"                     | property              | _          || _
-        "snykMonitor" | "sarifOutputPath"                | osPath("/path/to/sarif3")            | "RegularFile"                     | property              | _          || _
         "snykTest"    | "severityThreshold"              | SeverityThresholdOption.critical     | "SeverityThresholdOption"         | property              | _          || _
         "snykReport"  | "severityThreshold"              | SeverityThresholdOption.critical     | "SeverityThresholdOption"         | property              | _          || _
         "snykMonitor" | "severityThreshold"              | SeverityThresholdOption.low          | "SeverityThresholdOption"         | property              | _          || _
@@ -419,9 +415,7 @@ abstract class SnykPluginRegistrationIntegrationSpec extends SnykIntegrationSpec
         "targetReference"                | "reference1"                         | "String"                          | ConventionSource.extension(extensionName, property) | _          || _
         "policyPath"                     | osPath("/path/to/policy1")           | "RegularFile"                     | ConventionSource.extension(extensionName, property) | _          || _
         "printJson"                      | true                                 | "Boolean"                         | ConventionSource.extension(extensionName, property) | _          || _
-        "jsonOutputPath"                 | osPath("/path/to/json1")             | "RegularFile"                     | ConventionSource.extension(extensionName, property) | _          || _
         "printSarif"                     | true                                 | "Boolean"                         | ConventionSource.extension(extensionName, property) | _          || _
-        "sarifOutputPath"                | osPath("/path/to/sarif1")            | "RegularFile"                     | ConventionSource.extension(extensionName, property) | _          || _
         "severityThreshold"              | SeverityThresholdOption.critical     | "SeverityThresholdOption"         | ConventionSource.extension(extensionName, property) | _          || _
         "failOn"                         | FailOnOption.all                     | "FailOnOption"                    | ConventionSource.extension(extensionName, property) | _          || _
         "compilerArguments"              | ['--flag1']                          | "List<String>"                    | ConventionSource.extension(extensionName, property) | _          || _

@@ -1,6 +1,7 @@
 package wooga.gradle.snyk
 
 import com.wooga.gradle.test.PropertyQueryTaskWriter
+import com.wooga.gradle.test.PropertyUtils
 import spock.lang.Unroll
 
 class SnykPluginSubProjectRegistrationIntegrationSpec extends SnykPluginRegistrationIntegrationSpec {
@@ -40,6 +41,10 @@ class SnykPluginSubProjectRegistrationIntegrationSpec extends SnykPluginRegistra
         "#projectName#:#subProjectName#"
     }
 
+    File getCustomProjectPath() {
+        new File(projectDir, packageId)
+    }
+
     @Override
     String getCustomSubProjectValue() {
         "#subProjectName#"
@@ -48,6 +53,57 @@ class SnykPluginSubProjectRegistrationIntegrationSpec extends SnykPluginRegistra
     @Override
     String getGeneratedTaskName(String baseTaskName) {
         baseTaskName
+    }
+
+    @Unroll
+    def "registered project extension sets custom value for property '#property'"() {
+        given: "a registered gradle sub project"
+        setupProject()
+        buildFile << """
+        ${extensionName} {
+            ${getRegisterProjectInvocation(packageId)}
+            ${property} = ${rootExtensionValue}
+        }
+        """.stripIndent()
+
+        when:
+        def query = new PropertyQueryTaskWriter("project.extensions.getByName('${generatedExtensionName}').${property}",
+                ".getOrNull()",
+                PropertyUtils.toCamelCase("query_${generatedExtensionName}.${property}")
+        )
+        query.write(registeredBuildFile)
+        def result = runTasksSuccessfully(query.taskName)
+
+        then:
+        def v = (testValue && String.isInstance(testValue)) ? testValue
+                .replaceAll("#projectName#", moduleName)
+                .replaceAll("#packageName#", packageId)
+                .replaceAll("#subProjectName#", packageId)
+                .replace("#projectDir#", projectDir.absolutePath)
+                .replace("#subProjectDir#", customProjectPath.absolutePath) : testValue
+        query.matches(result, v)
+
+        when:
+        query = new PropertyQueryTaskWriter("${extensionName}.${property}")
+        query.write(buildFile)
+        result = runTasksSuccessfully(":${query.taskName}")
+
+        then:
+        def v2 = (testValue && String.isInstance(testValue)) ? testValue
+                .replaceAll("#projectName#", moduleName)
+                .replaceAll("#packageName#", packageId)
+                .replaceAll("#subProjectName#", packageId)
+                .replace("#projectDir#", projectDir.absolutePath)
+                .replace("#subProjectDir#", customProjectPath.absolutePath) : testValue
+        !query.matches(result, v2)
+
+        where:
+        property     | rawValue              | type        | rawRootExtensionValue           || expectedValue
+        "reportsDir" | customReportsDirValue | "Directory" | "build${File.separator}reports" || _
+
+        value = (type != _) ? wrapValueBasedOnType(rawValue, type.toString(), wrapValueFallback) : rawValue
+        rootExtensionValue = (type != _ && rawRootExtensionValue) ? wrapValueBasedOnType(rawRootExtensionValue, type.toString(), wrapValueFallback) : rawRootExtensionValue
+        testValue = (expectedValue == _) ? rawValue : expectedValue
     }
 
     @Unroll

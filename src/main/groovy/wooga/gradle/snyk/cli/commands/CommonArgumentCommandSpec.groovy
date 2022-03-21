@@ -14,20 +14,16 @@
  * limitations under the License.
  */
 
-package wooga.gradle.snyk.cli
+package wooga.gradle.snyk.cli.commands
 
 import com.wooga.gradle.BaseSpec
-import org.gradle.api.provider.Property
-import org.gradle.api.provider.Provider
 import org.gradle.api.provider.ProviderFactory
-import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.Internal
-import org.gradle.api.tasks.Optional
-import org.gradle.api.tasks.options.Option
 import wooga.gradle.OptionMapper
+import wooga.gradle.snyk.cli.SnykCommonArgumentSpec
 import wooga.gradle.snyk.cli.options.CommonOption
 
-trait CommonArgumentSpec extends BaseSpec implements OptionMapper<CommonOption> {
+trait CommonArgumentCommandSpec extends BaseSpec implements SnykCommonArgumentSpec, OptionMapper<CommonOption> {
 
     @Internal
     ProviderFactory getProviderFactory() {
@@ -51,40 +47,5 @@ trait CommonArgumentSpec extends BaseSpec implements OptionMapper<CommonOption> 
             return output
         }
         null
-    }
-
-    private final Property<Boolean> insecure = objects.property(Boolean)
-
-    @Input
-    @Optional
-    @Option(option = "insecure", description = """
-    Ignore unknown certificate authorities
-    """)
-    Property<Boolean> getInsecure() {
-        insecure
-    }
-
-    void setInsecure(Provider<Boolean> value) {
-        insecure.set(value)
-    }
-
-    void setInsecure(Boolean value) {
-        insecure.set(value)
-    }
-
-    private final Property<Boolean> debug = objects.property(Boolean)
-
-    @Input
-    @Optional
-    Property<Boolean> getDebug() {
-        debug
-    }
-
-    void setDebug(Provider<Boolean> value) {
-        debug.set(value)
-    }
-
-    void setDebug(Boolean value) {
-        debug.set(value)
     }
 }
