@@ -83,14 +83,14 @@ abstract class SnykTestBaseIntegrationSpec<T extends SnykTask> extends SnykCheck
 
         if (jsonEnabled) {
             appendToSubjectTask("""
-            reports.json.enabled=true
+            reports.json.required=true
             reports.json.outputLocation=${wrapValueBasedOnType(jsonReportLocation, File)}  
             """.stripIndent())
         }
 
         if (sarifEnabled) {
             appendToSubjectTask("""
-            reports.sarif.enabled=true
+            reports.sarif.required=true
             reports.sarif.outputLocation=${wrapValueBasedOnType(sarifReportLocation, File)}  
             """.stripIndent())
         }

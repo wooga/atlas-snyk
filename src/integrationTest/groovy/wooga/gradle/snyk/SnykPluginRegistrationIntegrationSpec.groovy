@@ -116,6 +116,182 @@ abstract class SnykPluginRegistrationIntegrationSpec extends SnykIntegrationSpec
     }
 
     @Unroll
+    def "sets convention for task #taskName and property #property"() {
+        given: "a registered gradle sub project"
+        setupProject()
+        buildFile << """
+        ${extensionName} {
+            ${getRegisterProjectInvocation(packageId)} {
+                ${conventionSource} = ${value}
+            }
+        }
+        """.stripIndent()
+
+        when:
+        def query = new PropertyQueryTaskWriter("project.extensions.getByName('${generatedExtensionName}').${taskName}.get().${property}",
+                (invocation == _) ? ".getOrNull()" : invocation.toString(),
+                PropertyUtils.toCamelCase("query_${generatedExtensionName}_${taskName}.${property}")
+        )
+
+        query.write(registeredBuildFile)
+        def result = runTasksSuccessfully(query.taskName)
+
+        then:
+        query.matches(result, testValue)
+
+        where:
+        taskName      | property                         | rawValue                             | type                              | conventionSource      | invocation || expectedValue
+        "snykTest"    | "allProjects"                    | true                                 | "Boolean"                         | property              | _          || _
+        "snykReport"  | "allProjects"                    | true                                 | "Boolean"                         | property              | _          || _
+        "snykMonitor" | "allProjects"                    | true                                 | "Boolean"                         | property              | _          || _
+        "snykTest"    | "detectionDepth"                 | 22                                   | "Integer"                         | property              | _          || _
+        "snykReport"  | "detectionDepth"                 | 11                                   | "Integer"                         | property              | _          || _
+        "snykMonitor" | "detectionDepth"                 | 45                                   | "Integer"                         | property              | _          || _
+        "snykTest"    | "exclude"                        | [osPath('/path/exclude1')]           | "List<File>"                      | property              | _          || _
+        "snykReport"  | "exclude"                        | [osPath('/path/exclude2')]           | "List<File>"                      | property              | _          || _
+        "snykMonitor" | "exclude"                        | [osPath('/path/exclude3')]           | "List<File>"                      | property              | _          || _
+        "snykTest"    | "pruneRepeatedSubDependencies"   | true                                 | "Boolean"                         | property              | _          || _
+        "snykReport"  | "pruneRepeatedSubDependencies"   | true                                 | "Boolean"                         | property              | _          || _
+        "snykMonitor" | "pruneRepeatedSubDependencies"   | true                                 | "Boolean"                         | property              | _          || _
+        "snykTest"    | "printDependencies"              | true                                 | "Boolean"                         | property              | _          || _
+        "snykReport"  | "printDependencies"              | true                                 | "Boolean"                         | property              | _          || _
+        "snykMonitor" | "printDependencies"              | true                                 | "Boolean"                         | property              | _          || _
+        "snykTest"    | "remoteRepoUrl"                  | "http://remote/url1"                 | "String"                          | property              | _          || _
+        "snykReport"  | "remoteRepoUrl"                  | "http://remote/url2"                 | "String"                          | property              | _          || _
+        "snykMonitor" | "remoteRepoUrl"                  | "http://remote/url3"                 | "String"                          | property              | _          || _
+        "snykTest"    | "includeDevelopmentDependencies" | true                                 | "Boolean"                         | property              | _          || _
+        "snykReport"  | "includeDevelopmentDependencies" | true                                 | "Boolean"                         | property              | _          || _
+        "snykMonitor" | "includeDevelopmentDependencies" | true                                 | "Boolean"                         | property              | _          || _
+        "snykTest"    | "orgName"                        | "org1"                               | "String"                          | property              | _          || _
+        "snykReport"  | "orgName"                        | "org1"                               | "String"                          | property              | _          || _
+        "snykMonitor" | "orgName"                        | "org1"                               | "String"                          | property              | _          || _
+        "snykTest"    | "packageFile"                    | osPath("/path/to/package1")          | "RegularFile"                     | property              | _          || _
+        "snykReport"  | "packageFile"                    | osPath("/path/to/package2")          | "RegularFile"                     | property              | _          || _
+        "snykMonitor" | "packageFile"                    | osPath("/path/to/package3")          | "RegularFile"                     | property              | _          || _
+        "snykTest"    | "packageManager"                 | "nuget"                              | "String"                          | property              | _          || _
+        "snykReport"  | "packageManager"                 | "gradle"                             | "String"                          | property              | _          || _
+        "snykMonitor" | "packageManager"                 | "npm"                                | "String"                          | property              | _          || _
+        "snykTest"    | "ignorePolicy"                   | true                                 | "Boolean"                         | property              | _          || _
+        "snykReport"  | "ignorePolicy"                   | true                                 | "Boolean"                         | property              | _          || _
+        "snykMonitor" | "ignorePolicy"                   | true                                 | "Boolean"                         | property              | _          || _
+        "snykTest"    | "showVulnerablePaths"            | VulnerablePathsOption.some           | "VulnerablePathsOption"           | property              | _          || _
+        "snykReport"  | "showVulnerablePaths"            | VulnerablePathsOption.none           | "VulnerablePathsOption"           | property              | _          || _
+        "snykMonitor" | "showVulnerablePaths"            | VulnerablePathsOption.all            | "VulnerablePathsOption"           | property              | _          || _
+        "snykTest"    | "projectName"                    | "project1"                           | "String"                          | property              | _          || _
+        "snykReport"  | "projectName"                    | "project2"                           | "String"                          | property              | _          || _
+        "snykMonitor" | "projectName"                    | "project3"                           | "String"                          | property              | _          || _
+        "snykTest"    | "targetReference"                | "reference1"                         | "String"                          | property              | _          || _
+        "snykReport"  | "targetReference"                | "reference2"                         | "String"                          | property              | _          || _
+        "snykMonitor" | "targetReference"                | "reference3"                         | "String"                          | property              | _          || _
+        "snykTest"    | "policyPath"                     | osPath("/path/to/policy1")           | "RegularFile"                     | property              | _          || _
+        "snykReport"  | "policyPath"                     | osPath("/path/to/policy2")           | "RegularFile"                     | property              | _          || _
+        "snykMonitor" | "policyPath"                     | osPath("/path/to/policy3")           | "RegularFile"                     | property              | _          || _
+        "snykTest"    | "printJson"                      | true                                 | "Boolean"                         | property              | _          || _
+        "snykReport"  | "printJson"                      | true                                 | "Boolean"                         | property              | _          || _
+        "snykMonitor" | "printJson"                      | true                                 | "Boolean"                         | property              | _          || _
+        "snykTest"    | "jsonOutputPath"                 | osPath("/path/to/json1")             | "RegularFile"                     | property              | _          || _
+        "snykReport"  | "jsonOutputPath"                 | osPath("/path/to/json2")             | "RegularFile"                     | property              | _          || _
+        "snykMonitor" | "jsonOutputPath"                 | osPath("/path/to/json3")             | "RegularFile"                     | property              | _          || _
+        "snykTest"    | "printSarif"                     | true                                 | "Boolean"                         | property              | _          || _
+        "snykReport"  | "printSarif"                     | true                                 | "Boolean"                         | property              | _          || _
+        "snykMonitor" | "printSarif"                     | true                                 | "Boolean"                         | property              | _          || _
+        "snykTest"    | "sarifOutputPath"                | osPath("/path/to/sarif1")            | "RegularFile"                     | property              | _          || _
+        "snykReport"  | "sarifOutputPath"                | osPath("/path/to/sarif2")            | "RegularFile"                     | property              | _          || _
+        "snykMonitor" | "sarifOutputPath"                | osPath("/path/to/sarif3")            | "RegularFile"                     | property              | _          || _
+        "snykTest"    | "severityThreshold"              | SeverityThresholdOption.critical     | "SeverityThresholdOption"         | property              | _          || _
+        "snykReport"  | "severityThreshold"              | SeverityThresholdOption.critical     | "SeverityThresholdOption"         | property              | _          || _
+        "snykMonitor" | "severityThreshold"              | SeverityThresholdOption.low          | "SeverityThresholdOption"         | property              | _          || _
+        "snykTest"    | "failOn"                         | FailOnOption.all                     | "FailOnOption"                    | property              | _          || _
+        "snykReport"  | "failOn"                         | FailOnOption.all                     | "FailOnOption"                    | property              | _          || _
+        "snykMonitor" | "failOn"                         | FailOnOption.upgradable              | "FailOnOption"                    | property              | _          || _
+        "snykTest"    | "compilerArguments"              | ['--flag1']                          | "List<String>"                    | property              | _          || _
+        "snykReport"  | "compilerArguments"              | ['--flag2']                          | "List<String>"                    | property              | _          || _
+        "snykMonitor" | "compilerArguments"              | ['--flag3']                          | "List<String>"                    | property              | _          || _
+
+        "snykTest"    | "assetsProjectName"              | true                                 | "Boolean"                         | property              | _          || _
+        "snykReport"  | "assetsProjectName"              | true                                 | "Boolean"                         | property              | _          || _
+        "snykMonitor" | "assetsProjectName"              | true                                 | "Boolean"                         | property              | _          || _
+        "snykTest"    | "packagesFolder"                 | osPath("/path/to/packages1")         | "Directory"                       | property              | _          || _
+        "snykReport"  | "packagesFolder"                 | osPath("/path/to/packages2")         | "Directory"                       | property              | _          || _
+        "snykMonitor" | "packagesFolder"                 | osPath("/path/to/packages3")         | "Directory"                       | property              | _          || _
+        "snykTest"    | "projectNamePrefix"              | "prefix1"                            | "String"                          | property              | _          || _
+        "snykReport"  | "projectNamePrefix"              | "prefix2"                            | "String"                          | property              | _          || _
+        "snykMonitor" | "projectNamePrefix"              | "prefix3"                            | "String"                          | property              | _          || _
+
+        "snykTest"    | "subProject"                     | "project1"                           | "String"                          | property              | _          || _
+        "snykReport"  | "subProject"                     | "project2"                           | "String"                          | property              | _          || _
+        "snykMonitor" | "subProject"                     | "project3"                           | "String"                          | property              | _          || _
+        "snykTest"    | "allSubProjects"                 | true                                 | "Boolean"                         | property              | _          || _
+        "snykReport"  | "allSubProjects"                 | true                                 | "Boolean"                         | property              | _          || _
+        "snykMonitor" | "allSubProjects"                 | true                                 | "Boolean"                         | property              | _          || _
+        "snykTest"    | "configurationMatching"          | "config1"                            | "String"                          | property              | _          || _
+        "snykReport"  | "configurationMatching"          | "config2"                            | "String"                          | property              | _          || _
+        "snykMonitor" | "configurationMatching"          | "config3"                            | "String"                          | property              | _          || _
+        "snykTest"    | "configurationAttributes"        | ['attribute1']                       | "List<String>"                    | property              | _          || _
+        "snykReport"  | "configurationAttributes"        | ['attribute2']                       | "List<String>"                    | property              | _          || _
+        "snykMonitor" | "configurationAttributes"        | ['attribute3']                       | "List<String>"                    | property              | _          || _
+        "snykTest"    | "reachable"                      | true                                 | "Boolean"                         | property              | _          || _
+        "snykReport"  | "reachable"                      | true                                 | "Boolean"                         | property              | _          || _
+        "snykMonitor" | "reachable"                      | true                                 | "Boolean"                         | property              | _          || _
+        "snykTest"    | "reachableTimeout"               | 22                                   | "Integer"                         | property              | _          || _
+        "snykReport"  | "reachableTimeout"               | 22                                   | "Integer"                         | property              | _          || _
+        "snykMonitor" | "reachableTimeout"               | 45                                   | "Integer"                         | property              | _          || _
+        "snykTest"    | "initScript"                     | osPath("/path/to/initScript1")       | "RegularFile"                     | property              | _          || _
+        "snykReport"  | "initScript"                     | osPath("/path/to/initScript2")       | "RegularFile"                     | property              | _          || _
+        "snykMonitor" | "initScript"                     | osPath("/path/to/initScript3")       | "RegularFile"                     | property              | _          || _
+
+        "snykTest"    | "scanAllUnmanaged"               | true                                 | "Boolean"                         | property              | _          || _
+        "snykReport"  | "scanAllUnmanaged"               | true                                 | "Boolean"                         | property              | _          || _
+        "snykMonitor" | "scanAllUnmanaged"               | true                                 | "Boolean"                         | property              | _          || _
+
+        "snykTest"    | "strictOutOfSync"                | true                                 | "Boolean"                         | property              | _          || _
+        "snykReport"  | "strictOutOfSync"                | true                                 | "Boolean"                         | property              | _          || _
+        "snykMonitor" | "strictOutOfSync"                | true                                 | "Boolean"                         | property              | _          || _
+
+        "snykTest"    | "command"                        | "command1"                           | "String"                          | property              | _          || _
+        "snykReport"  | "command"                        | "command2"                           | "String"                          | property              | _          || _
+        "snykMonitor" | "command"                        | "command3"                           | "String"                          | property              | _          || _
+        "snykTest"    | "skipUnresolved"                 | true                                 | "Boolean"                         | property              | _          || _
+        "snykReport"  | "skipUnresolved"                 | true                                 | "Boolean"                         | property              | _          || _
+        "snykMonitor" | "skipUnresolved"                 | true                                 | "Boolean"                         | property              | _          || _
+
+        "snykTest"    | "insecure"                       | true                                 | "Boolean"                         | property              | _          || _
+        "snykReport"  | "insecure"                       | true                                 | "Boolean"                         | property              | _          || _
+        "snykMonitor" | "insecure"                       | true                                 | "Boolean"                         | property              | _          || _
+        "snykTest"    | "debug"                          | true                                 | "Boolean"                         | property              | _          || _
+        "snykReport"  | "debug"                          | true                                 | "Boolean"                         | property              | _          || _
+        "snykMonitor" | "debug"                          | true                                 | "Boolean"                         | property              | _          || _
+
+        "snykTest"    | "token"                          | "test_token_1"                       | "String"                          | property              | _          || _
+        "snykReport"  | "token"                          | "test_token_2"                       | "String"                          | property              | _          || _
+        "snykMonitor" | "token"                          | "test_token_3"                       | "String"                          | property              | _          || _
+
+        "snykTest"    | "executableName"                 | "snyk1"                              | "String"                          | property              | _          || _
+        "snykReport"  | "executableName"                 | "snyk2"                              | "String"                          | property              | _          || _
+        "snykMonitor" | "executableName"                 | "snyk3"                              | "String"                          | property              | _          || _
+        "snykTest"    | "snykPath"                       | osPath("/path/to/snyk_home_1")       | "Directory"                       | property              | _          || _
+        "snykReport"  | "snykPath"                       | osPath("/path/to/snyk_home_2")       | "Directory"                       | property              | _          || _
+        "snykMonitor" | "snykPath"                       | osPath("/path/to/snyk_home_3")       | "Directory"                       | property              | _          || _
+
+        "snykMonitor" | "trustPolicies"                  | true                                 | "Boolean"                         | property              | _          || _
+        "snykMonitor" | "projectEnvironment"             | [EnvironmentOption.onprem]           | "List<EnvironmentOption>"         | property              | _          || _
+        "snykMonitor" | "projectLifecycle"               | [LifecycleOption.development]        | "List<LifecycleOption>"           | property              | _          || _
+        "snykMonitor" | "projectBusinessCriticality"     | [BusinessCriticalityOption.critical] | "List<BusinessCriticalityOption>" | property              | _          || _
+        "snykMonitor" | "projectTags"                    | ["foo": "bar"]                       | "Map<String, String>"             | property              | _          || _
+
+        "snykTest"    | "reports.sarif.required"         | true                                 | "Boolean"                         | "sarifReportsEnabled" | _          || _
+        "snykTest"    | "reports.json.required"          | true                                 | "Boolean"                         | "jsonReportsEnabled"  | _          || _
+        "snykReport"  | "reports.sarif.required"         | true                                 | "Boolean"                         | "sarifReportsEnabled" | _          || _
+
+        "snykTest"    | "debug"                          | true                                 | "Boolean"                         | property              | _          || _
+        "snykMonitor" | "debug"                          | true                                 | "Boolean"                         | property              | _          || _
+        "snykReport"  | "debug"                          | true                                 | "Boolean"                         | property              | _          || _
+
+        value = (type != _) ? wrapValueBasedOnType(rawValue, type.toString(), wrapValueFallback) : rawValue
+        testValue = (expectedValue == _) ? rawValue : expectedValue
+    }
+
+    @Unroll
     def "registered project extension sets custom value for property '#property'"() {
         given: "a registered gradle sub project"
         setupProject()
