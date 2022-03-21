@@ -9,7 +9,7 @@ package wooga.gradle.snyk.tasks
 class Report extends SnykCheckBase {
 
     Report() {
-        reports.json.enabled = true
+        reports.json.required.convention(true)
     }
 
     @Override

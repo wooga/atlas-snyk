@@ -95,8 +95,8 @@ class SnykPlugin implements Plugin<Project>, ProjectRegistrationHandler {
 
     static void mapExtensionPropertiesToCheckBaseTask(SnykCheckBase task, SnykPluginExtension extension) {
         mapExtensionPropertiesToTestTask(task, extension)
-        task.reports.sarif.setEnabled(extension.sarifReportsEnabled)
-        task.reports.json.setEnabled(extension.jsonReportsEnabled)
+        task.reports.sarif.required.convention(extension.sarifReportsEnabled)
+        task.reports.json.required.convention(extension.jsonReportsEnabled)
         task.reports.sarif.outputLocation.convention(extension.reportsDir.file(task.name + "/" + task.name + "." + task.reports.sarif.name))
         task.reports.json.outputLocation.convention(extension.reportsDir.file(task.name + "/" + task.name + "." + task.reports.json.name))
     }
@@ -173,11 +173,8 @@ class SnykPlugin implements Plugin<Project>, ProjectRegistrationHandler {
             }
         }
 
-        snykTest.configure {
-            mapExtensionPropertiesToTestTask(it, extension)
-            it.reports.sarif.setEnabled(extension.sarifReportsEnabled)
-            it.reports.json.setEnabled(extension.jsonReportsEnabled)
-        }
+        snykTest.configure({ mapExtensionPropertiesToCheckBaseTask(it, extension) })
+        snykReport.configure({ mapExtensionPropertiesToCheckBaseTask(it, extension) })
 
         snykMonitor.configure {
             mapExtensionPropertiesToTestTask(it, extension)
@@ -187,8 +184,6 @@ class SnykPlugin implements Plugin<Project>, ProjectRegistrationHandler {
         // TODO: Refactor into looping through all the shared properties since this approach is bug-prone
         extension.projectName.convention(projectName)
         extension.snykPath.convention(parentExtension.snykPath)
-        extension.executableName.convention(parentExtension.executableName)
-        extension.executableName.convention(parentExtension.executableName)
         extension.executableName.convention(parentExtension.executableName)
         extension.snykPath.convention(parentExtension.snykPath)
         extension.token.convention(parentExtension.token)
@@ -376,7 +371,6 @@ class SnykPlugin implements Plugin<Project>, ProjectRegistrationHandler {
     }
 
     private static mapExtensionPropertiesToTestTask(TestProjectCommandSpec task, SnykPluginExtension extension) {
-
         task.allProjects.convention(extension.allProjects)
         task.detectionDepth.convention(extension.detectionDepth)
         task.exclude.convention(extension.exclude)
