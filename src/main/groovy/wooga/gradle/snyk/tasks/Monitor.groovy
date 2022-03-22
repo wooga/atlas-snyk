@@ -18,6 +18,8 @@ package wooga.gradle.snyk.tasks
 
 
 import wooga.gradle.snyk.cli.commands.MonitorProjectCommandSpec
+import wooga.gradle.snyk.cli.commands.ProjectCommandSpec
+import wooga.gradle.snyk.cli.commands.TestProjectCommandSpec
 import wooga.gradle.snyk.cli.options.CommonOption
 import wooga.gradle.snyk.cli.options.MonitorOption
 import wooga.gradle.snyk.cli.options.ProjectOption
@@ -29,7 +31,7 @@ import wooga.gradle.snyk.cli.options.TestOption
  * After running this command, log in to the Snyk website and view your projects to see the monitor.
  * (https://docs.snyk.io/features/snyk-cli/commands/monitor)
  */
-class Monitor extends SnykTask implements MonitorProjectCommandSpec {
+class Monitor extends SnykTask implements MonitorProjectCommandSpec, TestProjectCommandSpec, ProjectCommandSpec {
 
     @Override
     void addMainOptions(List<String> args) {

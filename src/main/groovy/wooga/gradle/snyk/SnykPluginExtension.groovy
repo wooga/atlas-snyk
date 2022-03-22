@@ -9,15 +9,13 @@ import org.gradle.api.provider.Provider
 import org.gradle.api.tasks.Internal
 import org.gradle.api.tasks.TaskProvider
 import org.gradle.util.ConfigureUtil
-import wooga.gradle.snyk.cli.SnykTaskSpec
-import wooga.gradle.snyk.cli.commands.MonitorProjectCommandSpec
+import wooga.gradle.snyk.cli.*
 import wooga.gradle.snyk.tasks.Monitor
 import wooga.gradle.snyk.tasks.Report
 import wooga.gradle.snyk.tasks.Test
 
 trait SnykPluginExtension implements
-        MonitorProjectCommandSpec,
-        SnykTaskSpec {
+        SnykTestSpec, SnykMonitorSpec, SnykTaskSpec, SnykCommonArgumentSpec, SnykProjectSpec {
 
     abstract TaskProvider<Test> getSnykTest()
 

@@ -16,7 +16,6 @@
 
 package wooga.gradle.snyk.tasks
 
-import com.sun.org.apache.xpath.internal.operations.Bool
 import com.wooga.gradle.ArgumentsSpec
 import com.wooga.gradle.io.FileUtils
 import com.wooga.gradle.io.LogFileSpec
@@ -29,12 +28,14 @@ import org.gradle.api.tasks.TaskAction
 import org.gradle.process.ExecResult
 import org.gradle.process.ExecSpec
 import wooga.gradle.OptionAggregator
-import wooga.gradle.snyk.SnykActionSpec
 import wooga.gradle.snyk.cli.SnykExecutionException
 import wooga.gradle.snyk.cli.SnykTaskSpec
+import wooga.gradle.snyk.cli.commands.CommonArgumentCommandSpec
 
 abstract class SnykTask extends DefaultTask
-        implements SnykActionSpec, SnykTaskSpec,
+        implements
+                CommonArgumentCommandSpec,
+                SnykTaskSpec,
                 ArgumentsSpec,
                 LogFileSpec,
                 OutputStreamSpec,

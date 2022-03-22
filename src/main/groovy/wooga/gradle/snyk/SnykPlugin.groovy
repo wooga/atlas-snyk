@@ -97,6 +97,7 @@ class SnykPlugin implements Plugin<Project>, ProjectRegistrationHandler {
         mapExtensionPropertiesToTestTask(task, extension)
         task.reports.sarif.required.convention(extension.sarifReportsEnabled)
         task.reports.json.required.convention(extension.jsonReportsEnabled)
+
         task.reports.sarif.outputLocation.convention(extension.reportsDir.file(task.name + "/" + task.name + "." + task.reports.sarif.name))
         task.reports.json.outputLocation.convention(extension.reportsDir.file(task.name + "/" + task.name + "." + task.reports.json.name))
     }
@@ -122,6 +123,8 @@ class SnykPlugin implements Plugin<Project>, ProjectRegistrationHandler {
         extension.workingDirectory.convention(parentExtension.workingDirectory)
         // Assigning this will have the sub-project flag composed with the command line arguments
         extension.subProject.set(subProject.name)
+        // reset reports directory based on subproject
+        extension.reportsDir.convention(SnykConventions.reportsDir.getDirectoryValueProvider(subProject))
         extension
     }
 
@@ -202,9 +205,7 @@ class SnykPlugin implements Plugin<Project>, ProjectRegistrationHandler {
         extension.targetReference.convention(parentExtension.targetReference)
         extension.policyPath.convention(parentExtension.policyPath)
         extension.printJson.convention(parentExtension.printJson)
-        extension.jsonOutputPath.convention(parentExtension.jsonOutputPath)
         extension.printSarif.convention(parentExtension.printSarif)
-        extension.sarifOutputPath.convention(parentExtension.sarifOutputPath)
         extension.severityThreshold.convention(parentExtension.severityThreshold)
         extension.failOn.convention(parentExtension.failOn)
         extension.compilerArguments.convention(parentExtension.compilerArguments)
@@ -286,9 +287,7 @@ class SnykPlugin implements Plugin<Project>, ProjectRegistrationHandler {
         extension.targetReference.convention(SnykConventions.targetReference.getStringValueProvider(project))
         extension.policyPath.convention(SnykConventions.policyPath.getFileValueProvider(project))
         extension.printJson.convention(SnykConventions.printJson.getBooleanValueProvider(project))
-        extension.jsonOutputPath.convention(SnykConventions.jsonOutputPath.getFileValueProvider(project))
         extension.printSarif.convention(SnykConventions.printSarif.getBooleanValueProvider(project))
-        extension.sarifOutputPath.convention(SnykConventions.sarifOutputPath.getFileValueProvider(project))
         extension.severityThreshold.convention(SnykConventions.severityThreshold.getStringValueProvider(project).map({
             SeverityThresholdOption.valueOf(it)
         }))
@@ -387,9 +386,7 @@ class SnykPlugin implements Plugin<Project>, ProjectRegistrationHandler {
         task.targetReference.convention(extension.targetReference)
         task.policyPath.convention(extension.policyPath)
         task.printJson.convention(extension.printJson)
-        task.jsonOutputPath.convention(extension.jsonOutputPath)
         task.printSarif.convention(extension.printSarif)
-        task.sarifOutputPath.convention(extension.sarifOutputPath)
         task.severityThreshold.convention(extension.severityThreshold)
         task.failOn.convention(extension.failOn)
         task.compilerArguments.convention(extension.compilerArguments)

@@ -16,17 +16,16 @@
 
 package wooga.gradle.snyk.cli
 
+import com.wooga.gradle.BaseSpec
 import org.gradle.api.file.Directory
 import org.gradle.api.file.DirectoryProperty
-import org.gradle.api.file.RegularFile
-import org.gradle.api.file.RegularFileProperty
 import org.gradle.api.provider.Property
 import org.gradle.api.provider.Provider
 import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.Internal
 import org.gradle.api.tasks.Optional
 
-trait SnykTaskSpec extends CommonArgumentSpec {
+trait SnykTaskSpec extends BaseSpec {
 
     private final Property<String> token = objects.property(String)
 

@@ -158,21 +158,9 @@ class SnykConventions {
             null
     )
 
-    static final PropertyLookup jsonOutputPath = new PropertyLookup(
-            "SNYK_JSON_OUTPUT_PATH",
-            "snyk.jsonOutputPath",
-            null
-    )
-
     static final PropertyLookup printSarif = new PropertyLookup(
             "SNYK_PRINT_SARIF",
             "snyk.printSarif",
-            null
-    )
-
-    static final PropertyLookup sarifOutputPath = new PropertyLookup(
-            "SNYK_SARIF_OUTPUT_PATH",
-            "snyk.sarifOutputPath",
             null
     )
 
