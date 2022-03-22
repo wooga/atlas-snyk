@@ -30,6 +30,7 @@ trait SnykTaskSpec extends BaseSpec {
     private final Property<String> token = objects.property(String)
 
     @Input
+    @Optional
     Property<String> getToken() {
         token
     }

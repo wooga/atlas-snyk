@@ -64,10 +64,17 @@ abstract class SnykTask extends DefaultTask
         def _arguments = arguments.get()
         def _workingDir = workingDirectory.getOrNull()
         def _executable
+        Map<String, ?> _environment = [:]
         if (snykPath.present) {
             _executable = snykPath.file(executableName).get().asFile.path
         } else {
             _executable = executableName.get()
+        }
+
+        //TODO: handle custom environment variables with gradle-commons when implemented.
+        // see: https://github.com/wooga/gradle-commons/issues/14
+        if(token.present) {
+            _environment.put("SNYK_TOKEN", token.get())
         }
 
         if (logFile.present){
@@ -81,6 +88,7 @@ abstract class SnykTask extends DefaultTask
                 exec.with {
                     executable _executable
                     args = _arguments
+                    environment(_environment)
                     ignoreExitValue = true
                     standardOutput = getOutputStream(logFile.asFile.getOrNull())
                     errorOutput = getOutputStream(logFile.asFile.getOrNull())

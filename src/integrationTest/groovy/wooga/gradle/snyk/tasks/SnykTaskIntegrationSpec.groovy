@@ -101,20 +101,21 @@ abstract class SnykTaskIntegrationSpec<T extends SnykTask> extends SnykIntegrati
         wrapper
     }
 
-    void setSnykWrapper(Boolean setDummyToken = true, String object = extensionName) {
-        def snykWrapper = generateBatchWrapper("snyk-wrapper")
+    void setSnykWrapper(Boolean setDummyToken = true, String object = extensionName, Boolean printEnvironment = false, Boolean logToStdout = false) {
+        def snykWrapper = generateBatchWrapper("snyk-wrapper", printEnvironment)
         def wrapperDir = snykWrapper.parent
         def wrapperPath = escapedPath(wrapperDir)
 
         buildFile << """
-        ${object}.executableName=${wrapValueBasedOnType(snykWrapper.name, String)}
-        ${object}.snykPath=${wrapValueBasedOnType(wrapperPath, Directory)}
+            ${object}.executableName=${wrapValueBasedOnType(snykWrapper.name, String)}
+            ${object}.snykPath=${wrapValueBasedOnType(wrapperPath, Directory)}
+            ${object}.logToStdout=${wrapValueBasedOnType(logToStdout, Boolean)}
         """.stripIndent()
 
         if (setDummyToken) {
             buildFile << """
-        ${object}.token=${wrapValueBasedOnType("foobar", String)}
-        """.stripIndent()
+                ${object}.token=${wrapValueBasedOnType("foobar", String)}
+            """.stripIndent()
         }
     }
 
@@ -196,6 +197,35 @@ abstract class SnykTaskIntegrationSpec<T extends SnykTask> extends SnykIntegrati
         "debug"          | toSetter(property)      | false                        | _           | "Provider<Boolean>"
         value = wrapValueBasedOnType(rawValue, type, wrapValueFallback)
         expectedValue = returnValue == _ ? rawValue : returnValue
+    }
+
+    @Unroll()
+    def "composes correct CLI environment from #setter -> #expected"() {
+        given: "a snyk wrapper"
+        setSnykWrapper(false, subjectUnderTestName, true, true)
+
+        and: "a set of properties being set onto the task"
+        if (setter.concat("file")) {
+            createFile(mockFile)
+        }
+
+        def platformProjectDir = projectDir.path.split("\\\\").join("/")
+        setter = setter.replaceAll("#projectDir#", platformProjectDir)
+        buildFile << "\n${subjectUnderTestName}.${setter}"
+
+        when:
+        def result = runTasksSuccessfully(subjectUnderTestName)
+        expected = expected.replaceAll("#projectDir#", escapedPath(projectDir.path))
+
+        then:
+        outputContains(result, expected)
+
+        where:
+        setter            | environment
+        "token='1234567'" | "SNYK_TOKEN=1234567"
+
+        expected = environment
+        mockFile = "foo.bar"
     }
 
     def "task is never up to date"() {
