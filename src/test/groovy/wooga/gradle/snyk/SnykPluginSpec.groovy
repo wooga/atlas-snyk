@@ -161,6 +161,39 @@ class SnykPluginSpec extends ProjectSpec {
     }
 
     @Unroll
+    def "Snyk tasks from registered project #message wired to root snykInstall task if autoDownload property is #autoDownload"() {
+        given: "a project with snyk plugin added"
+        project.plugins.apply(PLUGIN_NAME)
+
+        and: "multiple sub projects"
+        def subProject1 = addSubproject("sub1")
+
+        and: "task does not yet exist"
+        assert !subProject1.extensions.findByName('snyk')
+
+        and:
+        SnykRootPluginExtension rootExtension = project.extensions.findByName('snyk') as SnykRootPluginExtension
+        rootExtension.autoDownload.set(autoDownload)
+
+        when:
+        rootExtension.registerProject(subProject1)
+
+        then:
+        def snykInstall = project.tasks.named('snykInstall')
+        subProject1.tasks.findByName(taskName).dependsOn.contains(snykInstall) == autoDownload
+
+        where:
+        taskName      | autoDownload
+        'snykMonitor' | true
+        'snykTest'    | true
+        'snykReport'  | true
+        'snykMonitor' | false
+        'snykTest'    | false
+        'snykReport'  | false
+        message = autoDownload ? "will be" : "will not be"
+    }
+
+    @Unroll
     def "Creates the '#extensionName' extension with type #extensionType for registered project #projectType #projectFile"() {
         given: "a project with snyk plugin added"
         project.plugins.apply(PLUGIN_NAME)
@@ -194,6 +227,38 @@ class SnykPluginSpec extends ProjectSpec {
         "foo/test.properties" | 'snyk.foo.test.properties' | "file"      | SnykPluginExtension | SnykRootPluginExtension
         "test"                | 'snyk.test'                | "dir"       | SnykPluginExtension | SnykRootPluginExtension
         "foo/test"            | 'snyk.foo.test'            | "dir"       | SnykPluginExtension | SnykRootPluginExtension
+    }
+
+    @Unroll
+    def "Snyk tasks from registered project file #message wired to snykInstall task if autoDownload property is #autoDownload"() {
+        given: "a project with snyk plugin added"
+        project.plugins.apply(PLUGIN_NAME)
+
+        and: "a project file"
+        def _projectFile = new File(projectDir, projectFile)
+        _projectFile.parentFile.mkdirs()
+        _projectFile.text = "Something"
+
+        and:
+        SnykRootPluginExtension rootExtension = project.extensions.findByName('snyk') as SnykRootPluginExtension
+        rootExtension.autoDownload.set(autoDownload)
+
+        when:
+        rootExtension.registerProject(_projectFile)
+
+        then:
+        def snykInstall = project.tasks.named('snykInstall')
+        project.tasks.findByName(taskName).dependsOn.contains(snykInstall) == autoDownload
+
+        where:
+        taskName                           | projectFile       | autoDownload
+        'snykMonitor.test.properties' | 'test.properties' | true
+        'snykTest.test.properties'    | 'test.properties' | true
+        'snykReport.test.properties'  | 'test.properties' | true
+        'snykMonitor.test.properties' | 'test.properties' | false
+        'snykTest.test.properties'    | 'test.properties' | false
+        'snykReport.test.properties'  | 'test.properties' | false
+        message = autoDownload ? "will be" : "will not be"
     }
 
     @Unroll

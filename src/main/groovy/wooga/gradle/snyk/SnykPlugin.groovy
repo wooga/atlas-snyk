@@ -53,24 +53,27 @@ class SnykPlugin implements Plugin<Project>, ProjectRegistrationHandler {
 
     private Project project
 
+    private TaskProvider<SnykInstall> snykInstall
+    private SnykRootPluginExtension rootExtension
+
     @Override
     void apply(Project project) {
         this.project = project
         def tasks = project.tasks
 
         // The install task will be re-used by all subprojects, since it contains the path to the downloaded executable
-        def snykInstall = project.tasks.register(INSTALL_TASK_NAME, SnykInstall)
+        snykInstall = project.tasks.register(INSTALL_TASK_NAME, SnykInstall)
         // Create the base tasks for the root project. These are then passed onto the extension
         def snykTest = project.tasks.register(TEST_TASK_NAME, Test)
         def snykReport = project.tasks.register(REPORT_TASK_NAME, Report)
         def snykMonitor = project.tasks.register(MONITOR_TASK_NAME, Monitor)
 
         // Create the extension
-        def extension = createAndConfigureExtension(project, snykTest, snykMonitor, snykReport)
+        rootExtension = createAndConfigureExtension(project, snykTest, snykMonitor, snykReport)
 
         // Map the base task properties common to all snyk tasks
         project.tasks.withType(SnykTask).configureEach {
-            mapExtensionPropertiesToBaseTask(it, extension, project)
+            mapExtensionPropertiesToBaseTask(it, rootExtension, project)
         }
         // Map the properties specific to certain tasks
 
@@ -79,18 +82,18 @@ class SnykPlugin implements Plugin<Project>, ProjectRegistrationHandler {
 
         checkTypes.each {
             tasks.withType(it).configureEach {
-                mapExtensionPropertiesToCheckBaseTask(it, extension)
+                mapExtensionPropertiesToCheckBaseTask(it, rootExtension)
             }
         }
 
         tasks.withType(Monitor).configureEach {
-            mapExtensionPropertiesToTestTask(it, extension)
-            mapExtensionPropertiesToMonitorTask(it, extension)
+            mapExtensionPropertiesToTestTask(it, rootExtension)
+            mapExtensionPropertiesToMonitorTask(it, rootExtension)
         }
         // Register an install task (to be used to install the snyk binary if need be)
-        registerSnykInstall(project, extension, snykInstall)
+        registerSnykInstall(project, rootExtension, snykInstall)
         registerTaskGroupAndDescription(project)
-        hookStrategyLifecycleTasks(project, extension)
+        hookStrategyLifecycleTasks(project, rootExtension)
     }
 
     static void mapExtensionPropertiesToCheckBaseTask(SnykCheckBase task, SnykPluginExtension extension) {
@@ -125,6 +128,8 @@ class SnykPlugin implements Plugin<Project>, ProjectRegistrationHandler {
         extension.subProject.set(subProject.name)
         // reset reports directory based on subproject
         extension.reportsDir.convention(SnykConventions.reportsDir.getDirectoryValueProvider(subProject))
+        // register the root snykInstall task for snyk tasks in the subproject
+        registerSnykInstall(subProject, rootExtension, snykInstall)
         extension
     }
 
