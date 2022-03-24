@@ -34,7 +34,7 @@ trait SnykInstallSpec extends BaseSpec {
     }
 
     @Option(option = "installation-dir", description = """
-    The directory to install snyk cli to.
+    The directory to install to.
     """)
     void setInstallationDir(String value) {
         installationDir.set(new File(value))
@@ -44,7 +44,7 @@ trait SnykInstallSpec extends BaseSpec {
 
     @Internal
     @Option(option = "executable-name", description = """
-    The name of the snyk executable without .exe after installation.
+    The name of the executable without .exe after installation.
     """)
     Property<String> getExecutableName() {
         executableName
@@ -62,7 +62,7 @@ trait SnykInstallSpec extends BaseSpec {
 
     @Input
     @Option(option = "version", description = """
-    The version of snyk to install.
+    The version to install.
     """)
     Property<String> getVersion() {
         version

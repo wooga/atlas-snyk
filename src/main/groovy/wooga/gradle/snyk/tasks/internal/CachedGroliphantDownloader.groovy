@@ -5,6 +5,8 @@ import org.gradle.api.Project
 import org.gradle.wrapper.IDownload
 import org.ysb33r.grolifant.internal.v4.downloader.Downloader
 
+import java.nio.file.Files
+
 class CachedGroliphantDownloader implements Downlader {
 
     private final Closure<IDownload> downloaderFactory
@@ -40,7 +42,7 @@ class CachedGroliphantDownloader implements Downlader {
     }
 
     private static boolean checksum(File file, String sha256) {
-        def actualSum = DigestUtils.sha256Hex(file.bytes)
+        def actualSum = DigestUtils.sha256Hex(Files.newInputStream(file.toPath()))
         return sha256 == null || actualSum == sha256
     }
 }
