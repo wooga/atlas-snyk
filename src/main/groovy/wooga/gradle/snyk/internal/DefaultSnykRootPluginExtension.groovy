@@ -19,24 +19,38 @@ package wooga.gradle.snyk.internal
 import org.gradle.api.Project
 import org.gradle.api.tasks.TaskProvider
 import wooga.gradle.snyk.ProjectRegistrationHandler
+import wooga.gradle.snyk.SnykInstallExtension
 import wooga.gradle.snyk.SnykRootPluginExtension
+import wooga.gradle.snyk.SnykToHtmlPluginExtension
 import wooga.gradle.snyk.tasks.Monitor
 import wooga.gradle.snyk.tasks.Report
+import wooga.gradle.snyk.tasks.SnykInstall
 import wooga.gradle.snyk.tasks.Test
 
-class DefaultSnykRootPluginExtension implements SnykRootPluginExtension {
+class DefaultSnykRootPluginExtension implements SnykRootPluginExtension, SnykInstallExtension {
 
+    final TaskProvider<SnykInstall> snykInstall
     final TaskProvider<Test> snykTest
     final TaskProvider<Monitor> snykMonitor
     final TaskProvider<Report> snykReport
     final ProjectRegistrationHandler registerProjectHandler
     final Project project
+    final SnykToHtmlPluginExtension snykToHtml
 
-    DefaultSnykRootPluginExtension(Project project, TaskProvider<Test> snykTest, TaskProvider<Monitor> snykMonitor, TaskProvider<Report> snykReport, ProjectRegistrationHandler registerProjectHandler) {
+    DefaultSnykRootPluginExtension(
+            Project project,
+            TaskProvider<SnykInstall> snykInstall,
+            TaskProvider<Test> snykTest,
+            TaskProvider<Monitor> snykMonitor,
+            TaskProvider<Report> snykReport,
+            SnykToHtmlPluginExtension snykToHtml,
+            ProjectRegistrationHandler registerProjectHandler) {
         this.project = project
+        this.snykInstall = snykInstall
         this.snykTest = snykTest
         this.snykMonitor = snykMonitor
         this.snykReport = snykReport
+        this.snykToHtml = snykToHtml
         this.registerProjectHandler = registerProjectHandler
     }
 }

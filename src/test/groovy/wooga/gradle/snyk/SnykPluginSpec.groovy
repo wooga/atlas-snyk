@@ -18,10 +18,7 @@ package wooga.gradle.snyk
 
 import nebula.test.ProjectSpec
 import spock.lang.Unroll
-import wooga.gradle.snyk.tasks.Monitor
-import wooga.gradle.snyk.tasks.Report
-import wooga.gradle.snyk.tasks.SnykInstall
-import wooga.gradle.snyk.tasks.Test
+import wooga.gradle.snyk.tasks.*
 
 class SnykPluginSpec extends ProjectSpec {
 
@@ -41,11 +38,12 @@ class SnykPluginSpec extends ProjectSpec {
         taskType.isInstance(task)
 
         where:
-        taskName      | taskType
-        "snykTest"    | Test
-        "snykMonitor" | Monitor
-        "snykReport"  | Report
-        "snykInstall" | SnykInstall
+        taskName            | taskType
+        "snykTest"          | Test
+        "snykMonitor"       | Monitor
+        "snykReport"        | Report
+        "snykInstall"       | SnykInstall
+        "snykToHtmlInstall" | SnykToHtmlInstall
     }
 
     @Unroll
@@ -64,6 +62,7 @@ class SnykPluginSpec extends ProjectSpec {
         where:
         extensionName | extensionType
         'snyk'        | SnykRootPluginExtension
+        'snykToHtml'  | SnykToHtmlPluginExtension
     }
 
     @Unroll
@@ -161,7 +160,7 @@ class SnykPluginSpec extends ProjectSpec {
     }
 
     @Unroll
-    def "Snyk tasks from registered project #message wired to root snykInstall task if autoDownload property is #autoDownload"() {
+    def "Snyk task #taskName from registered project #message wired to root snykInstall task if autoDownload property is #autoDownload"() {
         given: "a project with snyk plugin added"
         project.plugins.apply(PLUGIN_NAME)
 
@@ -191,6 +190,42 @@ class SnykPluginSpec extends ProjectSpec {
         'snykTest'    | false
         'snykReport'  | false
         message = autoDownload ? "will be" : "will not be"
+    }
+
+    @Unroll
+    def "Snyk task #taskName from registered project #message wired to root snykToHtmlInstall task if autoDownload property is #autoDownload and html reports are #htmlReportEnabled"() {
+        given: "a project with snyk plugin added"
+        project.plugins.apply(PLUGIN_NAME)
+
+        and: "multiple sub projects"
+        def subProject1 = addSubproject("sub1")
+
+        and: "task does not yet exist"
+        assert !subProject1.extensions.findByName('snyk')
+
+        and:
+        SnykRootPluginExtension rootExtension = project.extensions.findByName('snyk') as SnykRootPluginExtension
+        rootExtension.autoDownload.set(autoDownload)
+        rootExtension.htmlReportsEnabled.set(htmlReportEnabled)
+
+        when:
+        rootExtension.registerProject(subProject1)
+
+        then:
+        def snykInstall = project.tasks.named('snykToHtmlInstall')
+        subProject1.tasks.findByName(taskName).dependsOn.contains(snykInstall) == expectedResult
+
+        where:
+        taskName     | autoDownload | htmlReportEnabled || expectedResult
+        'snykTest'   | true         | true              || true
+        'snykReport' | true         | true              || true
+        'snykTest'   | false        | true              || false
+        'snykReport' | false        | true              || false
+        'snykTest'   | false        | false             || false
+        'snykReport' | false        | false             || false
+        'snykTest'   | true         | false             || false
+        'snykReport' | true         | false             || true
+        message = expectedResult ? "will be" : "will not be"
     }
 
     @Unroll
@@ -230,7 +265,7 @@ class SnykPluginSpec extends ProjectSpec {
     }
 
     @Unroll
-    def "Snyk tasks from registered project file #message wired to snykInstall task if autoDownload property is #autoDownload"() {
+    def "Snyk task #taskName from registered project file #message wired to snykInstall task if autoDownload property is #autoDownload"() {
         given: "a project with snyk plugin added"
         project.plugins.apply(PLUGIN_NAME)
 
@@ -251,14 +286,52 @@ class SnykPluginSpec extends ProjectSpec {
         project.tasks.findByName(taskName).dependsOn.contains(snykInstall) == autoDownload
 
         where:
-        taskName                           | projectFile       | autoDownload
-        'snykMonitor.test.properties' | 'test.properties' | true
-        'snykTest.test.properties'    | 'test.properties' | true
-        'snykReport.test.properties'  | 'test.properties' | true
-        'snykMonitor.test.properties' | 'test.properties' | false
-        'snykTest.test.properties'    | 'test.properties' | false
-        'snykReport.test.properties'  | 'test.properties' | false
+        taskName                      | autoDownload
+        'snykMonitor.test.properties' | true
+        'snykTest.test.properties'    | true
+        'snykReport.test.properties'  | true
+        'snykMonitor.test.properties' | false
+        'snykTest.test.properties'    | false
+        'snykReport.test.properties'  | false
+        projectFile = 'test.properties'
         message = autoDownload ? "will be" : "will not be"
+    }
+
+    @Unroll
+    def "Snyk task #taskName from registered project file #message wired to root snykToHtmlInstall task if autoDownload property is #autoDownload and html reports are #htmlReportEnabled"() {
+        given: "a project with snyk plugin added"
+        project.plugins.apply(PLUGIN_NAME)
+
+        and: "a project file"
+        def _projectFile = new File(projectDir, projectFile)
+        _projectFile.parentFile.mkdirs()
+        _projectFile.text = "Something"
+
+        and:
+        SnykRootPluginExtension rootExtension = project.extensions.findByName('snyk') as SnykRootPluginExtension
+        rootExtension.autoDownload.set(autoDownload)
+        rootExtension.htmlReportsEnabled.set(htmlReportEnabled)
+
+        when:
+        rootExtension.registerProject(_projectFile)
+
+        then:
+        def snykInstall = project.tasks.named('snykToHtmlInstall')
+        project.tasks.findByName(taskName).dependsOn.contains(snykInstall) == expectedResult
+
+        where:
+        taskName     | autoDownload | htmlReportEnabled || expectedResult
+        'snykTest'   | true         | true              || true
+        'snykReport' | true         | true              || true
+        'snykTest'   | false        | true              || false
+        'snykReport' | false        | true              || false
+        'snykTest'   | false        | false             || false
+        'snykReport' | false        | false             || false
+        'snykTest'   | true         | false             || false
+        'snykReport' | true         | false             || true                 // report will alwasy set htmlReportEnabled to true
+
+        projectFile = 'test.properties'
+        message = expectedResult ? "will be" : "will not be"
     }
 
     @Unroll

@@ -1,3 +1,19 @@
+/*
+ * Copyright 2022 Wooga GmbH
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *        http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package wooga.gradle.snyk.tasks
 
 import wooga.gradle.snyk.SnykPlugin
@@ -10,11 +26,11 @@ class ReportIntegrationSpec extends SnykTestBaseIntegrationSpec<Report> {
 
     def setup() {
         appendToSubjectTask("""
-        reports.json.required = false
+        reports.html.required = false
         """.stripIndent())
     }
 
-    def "generates json report by default"() {
+    def "generates html report by default"() {
         given: "a snyk setup"
         and: "snyk plugin applied with conventions"
         buildFile << """
@@ -23,10 +39,11 @@ class ReportIntegrationSpec extends SnykTestBaseIntegrationSpec<Report> {
 
         setSnykToken()
         setDownloadedSnyk()
+        setDownloadedSnykToHtml()
 
         and: "bring back the actual default value"
         appendToSubjectTask("""
-        reports.json.required.set(null)
+        reports.html.required.set(true)
         """)
 
         and: "an empty policy file (see: https://github.com/snyk/policy/issues/61)"
@@ -41,11 +58,11 @@ class ReportIntegrationSpec extends SnykTestBaseIntegrationSpec<Report> {
             """.stripIndent())
 
         and: "a future report file"
-        def jsonReport = new File(projectDir, jsonReportLocation)
-        assert !jsonReport.exists()
+        def htmlReport = new File(projectDir, htmlReportLocation)
+        assert !htmlReport.exists()
 
         appendToSubjectTask("""
-            reports.json.outputLocation=${wrapValueBasedOnType(jsonReportLocation, File)}  
+            reports.html.outputLocation=${wrapValueBasedOnType(htmlReportLocation, File)}  
         """.stripIndent())
 
         when:
@@ -55,9 +72,9 @@ class ReportIntegrationSpec extends SnykTestBaseIntegrationSpec<Report> {
         result.success
         result.wasExecuted(subjectUnderTestName)
         !result.wasSkipped(subjectUnderTestName)
-        jsonReport.exists()
+        htmlReport.exists()
 
         where:
-        jsonReportLocation = "build/reports/report.json"
+        htmlReportLocation = "build/reports/report.html"
     }
 }

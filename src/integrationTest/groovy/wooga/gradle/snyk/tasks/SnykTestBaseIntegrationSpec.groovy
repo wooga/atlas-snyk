@@ -18,6 +18,7 @@ package wooga.gradle.snyk.tasks
 
 import com.wooga.gradle.PlatformUtils
 import com.wooga.spock.extensions.snyk.Snyk
+import com.wooga.spock.extensions.snyk.SnykToHtml
 import org.apache.commons.io.FileUtils
 import spock.lang.Shared
 import spock.lang.Unroll
@@ -30,12 +31,25 @@ abstract class SnykTestBaseIntegrationSpec<T extends SnykTask> extends SnykCheck
     @Snyk
     File snykExecutable
 
+    @Shared
+    @SnykToHtml
+    File snykToHtmlExecutable
+
     def setDownloadedSnyk() {
         environmentVariables.set("SNYK_PATH", snykExecutable.parentFile.path)
 
         appendToSubjectTask("""
         snykPath = file(System.getenv('SNYK_PATH'))
         executableName = "${snykExecutable.name}"
+        """.stripIndent())
+    }
+
+    def setDownloadedSnykToHtml() {
+        environmentVariables.set("SNYK_TO_HTML_PATH", snykToHtmlExecutable.parentFile.path)
+
+        appendToSubjectTask("""
+        reports.html.snykPath = file(System.getenv('SNYK_TO_HTML_PATH'))
+        reports.html.executableName = "${snykToHtmlExecutable.name}"
         """.stripIndent())
     }
 
@@ -62,6 +76,7 @@ abstract class SnykTestBaseIntegrationSpec<T extends SnykTask> extends SnykCheck
     def "generates #reportType report"() {
         given: "a NET solution or project"
         setDownloadedSnyk()
+        setDownloadedSnykToHtml()
         setSnykToken()
 
         and: "an empty policy file (see: https://github.com/snyk/policy/issues/61)"
@@ -72,6 +87,8 @@ abstract class SnykTestBaseIntegrationSpec<T extends SnykTask> extends SnykCheck
 
         and: "project-specific configurations for it"
         appendToSubjectTask("""
+            logToStdout = true
+            logFile = file("build/logs/test.log")
             packageFile=${wrapValueBasedOnType("net_project.sln", File)} 
             """.stripIndent())
 
@@ -80,6 +97,8 @@ abstract class SnykTestBaseIntegrationSpec<T extends SnykTask> extends SnykCheck
         assert !jsonReport.exists()
         def sarifReport = new File(projectDir, sarifReportLocation)
         assert !sarifReport.exists()
+        def htmlReport = new File(projectDir, htmlReportLocation)
+        assert !htmlReport.exists()
 
         if (jsonEnabled) {
             appendToSubjectTask("""
@@ -95,6 +114,13 @@ abstract class SnykTestBaseIntegrationSpec<T extends SnykTask> extends SnykCheck
             """.stripIndent())
         }
 
+        if (htmlEnabled) {
+            appendToSubjectTask("""
+            reports.html.required=true
+            reports.html.outputLocation=${wrapValueBasedOnType(htmlReportLocation, File)}  
+            """.stripIndent())
+        }
+
         when:
         def result = runTasks(subjectUnderTestName)
 
@@ -104,14 +130,18 @@ abstract class SnykTestBaseIntegrationSpec<T extends SnykTask> extends SnykCheck
         !result.wasSkipped(subjectUnderTestName)
         jsonReport.exists() == jsonEnabled
         sarifReport.exists() == sarifEnabled
+        htmlReport.exists() == htmlEnabled
 
         where:
-        reportType   | jsonEnabled | sarifEnabled
-        "json"       | true        | false
-        "sarif"      | false       | true
-        "json&sarif" | true        | true
+        reportType   | jsonEnabled | sarifEnabled | htmlEnabled
+        "json"       | true        | false        | false
+        "sarif"      | false       | true         | false
+        "html"       | true        | false        | true //html enables json to generate the json report
+        "json&sarif" | true        | true         | false
+        "html&sarif" | true        | true         | true
         jsonReportLocation = "build/reports/report.json"
         sarifReportLocation = "build/reports/report.sarif"
+        htmlReportLocation = "build/reports/report.html"
     }
 
     /**

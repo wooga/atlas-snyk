@@ -50,6 +50,42 @@ class SnykConventions {
             null
     )
 
+    static final PropertyLookup snykToHtmlExecutableName = new PropertyLookup(
+            "SNYK_TO_HTML_EXECUTABLE_NAME",
+            "snykToHtml.executableName",
+            "snyk-to-html"
+    )
+
+    static final PropertyLookup snykToHtmlVersion = new PropertyLookup(
+            "SNYK_TO_HTML_VERSION",
+            "snykToHtml.version",
+            "latest"
+    )
+
+    static final PropertyLookup snykToHtmlInstallationDir = new PropertyLookup(
+            "SNYK_TO_HTML_INSTALLATION_DIR",
+            "snykToHtml.installationDir",
+            null
+    )
+
+    static final PropertyLookup snykToHtmlPath = new PropertyLookup(
+            ["SNYK_TO_HTML_PATH", "SNYK_TO_HTML_SNYK_PATH"],
+            ["snykToHtml.snykPath", "snykToHtml.path"],
+            null
+    )
+
+    static final PropertyLookup snykToHtmlSummaryOnly = new PropertyLookup(
+            "SNYK_TO_HTML_SUMMARY_ONLY",
+            "snykToHtml.summaryOnly",
+            null
+    )
+
+    static final PropertyLookup snykToHtmlActionableRemediation = new PropertyLookup(
+            "SNYK_TO_HTML_ACTIONABLE_REMEDIATION",
+            "snykToHtml.actionableRemediation",
+            null
+    )
+
     static final PropertyLookup insecure = new PropertyLookup(
             "SNYK_INSECURE",
             "snyk.insecure",
@@ -329,6 +365,12 @@ class SnykConventions {
     static final PropertyLookup sarifReportsEnabled = new PropertyLookup(
             "SNYK_SARIF_REPORTS_ENABLED",
             "snyk.sarifReportsEnabled",
+            false
+    )
+
+    static final PropertyLookup htmlReportsEnabled = new PropertyLookup(
+            "SNYK_HTML_REPORTS_ENABLED",
+            "snyk.htmlReportsEnabled",
             false
     )
 

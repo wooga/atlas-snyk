@@ -30,6 +30,7 @@ import wooga.gradle.snyk.cli.commands.MonitorProjectCommandSpec
 import wooga.gradle.snyk.cli.commands.TestProjectCommandSpec
 import wooga.gradle.snyk.internal.DefaultSnykPluginExtension
 import wooga.gradle.snyk.internal.DefaultSnykRootPluginExtension
+import wooga.gradle.snyk.internal.DefaultSnykToHtmlPluginExtension
 import wooga.gradle.snyk.tasks.*
 
 class SnykPlugin implements Plugin<Project>, ProjectRegistrationHandler {
@@ -39,6 +40,7 @@ class SnykPlugin implements Plugin<Project>, ProjectRegistrationHandler {
     static String GROUP = "snyk"
     static String EXTENSION_NAME = "snyk"
     static String INSTALL_TASK_NAME = "snykInstall"
+    static String INSTALL_TO_HTML_TASK_NAME = "snykToHtmlInstall"
 
     static String TEST_TASK_NAME = "snykTest"
     static String REPORT_TASK_NAME = "snykReport"
@@ -53,27 +55,17 @@ class SnykPlugin implements Plugin<Project>, ProjectRegistrationHandler {
 
     private Project project
 
-    private TaskProvider<SnykInstall> snykInstall
-    private SnykRootPluginExtension rootExtension
-
     @Override
     void apply(Project project) {
         this.project = project
         def tasks = project.tasks
 
-        // The install task will be re-used by all subprojects, since it contains the path to the downloaded executable
-        snykInstall = project.tasks.register(INSTALL_TASK_NAME, SnykInstall)
-        // Create the base tasks for the root project. These are then passed onto the extension
-        def snykTest = project.tasks.register(TEST_TASK_NAME, Test)
-        def snykReport = project.tasks.register(REPORT_TASK_NAME, Report)
-        def snykMonitor = project.tasks.register(MONITOR_TASK_NAME, Monitor)
-
-        // Create the extension
-        rootExtension = createAndConfigureExtension(project, snykTest, snykMonitor, snykReport)
+        def snykToHtmlExtension = createAndConfigureSnykToHtmlExtension(project)
+        def snykExtension = createAndConfigureExtension(project, snykToHtmlExtension)
 
         // Map the base task properties common to all snyk tasks
         project.tasks.withType(SnykTask).configureEach {
-            mapExtensionPropertiesToBaseTask(it, rootExtension, project)
+            mapExtensionPropertiesToBaseTask(it, snykExtension, project)
         }
         // Map the properties specific to certain tasks
 
@@ -82,27 +74,40 @@ class SnykPlugin implements Plugin<Project>, ProjectRegistrationHandler {
 
         checkTypes.each {
             tasks.withType(it).configureEach {
-                mapExtensionPropertiesToCheckBaseTask(it, rootExtension)
+                mapExtensionPropertiesToCheckBaseTask(it, snykExtension)
+                mapSnykToHtmlExtensionPropertiesToCheckBaseTask(it, snykToHtmlExtension)
             }
         }
 
         tasks.withType(Monitor).configureEach {
-            mapExtensionPropertiesToTestTask(it, rootExtension)
-            mapExtensionPropertiesToMonitorTask(it, rootExtension)
+            mapExtensionPropertiesToTestTask(it, snykExtension)
+            mapExtensionPropertiesToMonitorTask(it, snykExtension)
         }
         // Register an install task (to be used to install the snyk binary if need be)
-        registerSnykInstall(project, rootExtension, snykInstall)
+        registerSnykInstall(project, snykExtension)
+        registerSnykToHtmlInstall(project, snykToHtmlExtension)
         registerTaskGroupAndDescription(project)
-        hookStrategyLifecycleTasks(project, rootExtension)
+        hookStrategyLifecycleTasks(project, snykExtension)
     }
 
     static void mapExtensionPropertiesToCheckBaseTask(SnykCheckBase task, SnykPluginExtension extension) {
         mapExtensionPropertiesToTestTask(task, extension)
         task.reports.sarif.required.convention(extension.sarifReportsEnabled)
         task.reports.json.required.convention(extension.jsonReportsEnabled)
+        task.reports.html.required.convention(extension.htmlReportsEnabled)
 
         task.reports.sarif.outputLocation.convention(extension.reportsDir.file(task.name + "/" + task.name + "." + task.reports.sarif.name))
         task.reports.json.outputLocation.convention(extension.reportsDir.file(task.name + "/" + task.name + "." + task.reports.json.name))
+        task.reports.html.outputLocation.convention(extension.reportsDir.file(task.name + "/" + task.name + "." + task.reports.html.name))
+    }
+
+    static void mapSnykToHtmlExtensionPropertiesToCheckBaseTask(SnykCheckBase task, SnykToHtmlPluginExtension extension) {
+        task.reports.html.actionableRemediation.convention(extension.actionableRemediation)
+        task.reports.html.summaryOnly.convention(extension.summaryOnly)
+        task.reports.html.executableName.convention(extension.executableName)
+        task.reports.html.snykPath.convention(extension.snykPath)
+        task.reports.html.logFile.convention(task.logFile)
+        task.reports.html.logToStdout.convention(task.logToStdout)
     }
 
     /**
@@ -129,7 +134,8 @@ class SnykPlugin implements Plugin<Project>, ProjectRegistrationHandler {
         // reset reports directory based on subproject
         extension.reportsDir.convention(SnykConventions.reportsDir.getDirectoryValueProvider(subProject))
         // register the root snykInstall task for snyk tasks in the subproject
-        registerSnykInstall(subProject, rootExtension, snykInstall)
+        registerSnykInstall(subProject, parentExtension)
+        registerSnykToHtmlInstall(subProject, parentExtension.snykToHtml)
         extension
     }
 
@@ -174,15 +180,28 @@ class SnykPlugin implements Plugin<Project>, ProjectRegistrationHandler {
         extension
     }
 
-    static void mapParentExtensionToExtension(Project project, Provider<String> projectName, SnykPluginExtension extension, SnykPluginExtension parentExtension, TaskProvider<Test> snykTest, TaskProvider<Monitor> snykMonitor, TaskProvider<Report> snykReport) {
+    static void mapParentExtensionToExtension(
+            Project project,
+            Provider<String> projectName,
+            SnykPluginExtension extension,
+            SnykRootPluginExtension parentExtension,
+            TaskProvider<Test> snykTest,
+            TaskProvider<Monitor> snykMonitor,
+            TaskProvider<Report> snykReport) {
         ([snykTest, snykReport, snykMonitor] as List<TaskProvider<SnykTask>>).each {
             it.configure {
                 mapExtensionPropertiesToBaseTask(it, extension, project)
             }
         }
 
-        snykTest.configure({ mapExtensionPropertiesToCheckBaseTask(it, extension) })
-        snykReport.configure({ mapExtensionPropertiesToCheckBaseTask(it, extension) })
+        snykTest.configure({
+            mapExtensionPropertiesToCheckBaseTask(it, extension)
+            mapSnykToHtmlExtensionPropertiesToCheckBaseTask(it, parentExtension.snykToHtml)
+        })
+        snykReport.configure({
+            mapExtensionPropertiesToCheckBaseTask(it, extension)
+            mapSnykToHtmlExtensionPropertiesToCheckBaseTask(it, parentExtension.snykToHtml)
+        })
 
         snykMonitor.configure {
             mapExtensionPropertiesToTestTask(it, extension)
@@ -191,7 +210,6 @@ class SnykPlugin implements Plugin<Project>, ProjectRegistrationHandler {
 
         // TODO: Refactor into looping through all the shared properties since this approach is bug-prone
         extension.projectName.convention(projectName)
-        extension.snykPath.convention(parentExtension.snykPath)
         extension.executableName.convention(parentExtension.executableName)
         extension.snykPath.convention(parentExtension.snykPath)
         extension.token.convention(parentExtension.token)
@@ -238,15 +256,46 @@ class SnykPlugin implements Plugin<Project>, ProjectRegistrationHandler {
         extension.reportsDir.convention(parentExtension.reportsDir)
         extension.jsonReportsEnabled.convention(parentExtension.jsonReportsEnabled)
         extension.sarifReportsEnabled.convention(parentExtension.sarifReportsEnabled)
+        extension.htmlReportsEnabled.convention(parentExtension.htmlReportsEnabled)
 
         extension
     }
 
+    protected static SnykToHtmlPluginExtension createAndConfigureSnykToHtmlExtension(Project project) {
+        def snykToHtmlInstall = project.tasks.register(INSTALL_TO_HTML_TASK_NAME, SnykToHtmlInstall)
+        def extension = project.extensions.create(SnykToHtmlPluginExtension, "snykToHtml", DefaultSnykToHtmlPluginExtension, snykToHtmlInstall)
 
-    protected SnykRootPluginExtension createAndConfigureExtension(Project project, TaskProvider<Test> snykTest, TaskProvider<Monitor> snykMonitor, TaskProvider<Report> snykReport) {
-        def extension = project.extensions.create(SnykRootPluginExtension, EXTENSION_NAME, DefaultSnykRootPluginExtension, project, snykTest, snykMonitor, snykReport, this)
+        extension.version.convention(SnykConventions.snykToHtmlVersion.getStringValueProvider(project))
+        extension.executableName.convention(SnykConventions.snykToHtmlExecutableName.getStringValueProvider(project))
+        extension.installationDir.convention(SnykConventions.snykToHtmlInstallationDir.getDirectoryValueProvider(project).orElse(
+                project.layout.dir(extension.version.map { version ->
+                    new File(project.gradle.gradleUserHomeDir, "atlas-snyk/snyk-to-html/${version}")
+                })
+        ))
 
-        // TODO: Move to conventions?
+        extension.summaryOnly.convention(SnykConventions.snykToHtmlSummaryOnly.getBooleanValueProvider(project))
+        extension.actionableRemediation.convention(SnykConventions.snykToHtmlActionableRemediation.getBooleanValueProvider(project))
+        extension.autoDownload.convention(SnykConventions.autoDownload.getBooleanValueProvider(project))
+        // If the convention for the snyk path is null, then it will use the convention provided by the
+        // install task if autoDownloadSnykCli is true
+        extension.snykPath.convention(SnykConventions.snykToHtmlPath.getDirectoryValueProvider(project).
+                orElse(extension.autoDownload.flatMap({
+                    return it ? extension.installationDir : null
+                })
+                )
+        )
+
+        extension
+    }
+
+    protected SnykRootPluginExtension createAndConfigureExtension(Project project, SnykToHtmlPluginExtension snykToHtmlPluginExtension) {
+        def snykInstall = project.tasks.register(INSTALL_TASK_NAME, SnykInstall)
+        def snykTest = project.tasks.register(TEST_TASK_NAME, Test)
+        def snykReport = project.tasks.register(REPORT_TASK_NAME, Report)
+        def snykMonitor = project.tasks.register(MONITOR_TASK_NAME, Monitor)
+
+        def extension = project.extensions.create(SnykRootPluginExtension, EXTENSION_NAME, DefaultSnykRootPluginExtension, project, snykInstall, snykTest, snykMonitor, snykReport, snykToHtmlPluginExtension, this)
+        snykToHtmlPluginExtension.autoDownload.convention(extension.autoDownload)
         extension.autoDownload.convention(SnykConventions.autoDownload.getBooleanValueProvider(project))
 
         extension.workingDirectory.set(project.layout.projectDirectory.asFile.absolutePath)
@@ -254,7 +303,7 @@ class SnykPlugin implements Plugin<Project>, ProjectRegistrationHandler {
         extension.executableName.convention(SnykConventions.executableName.getStringValueProvider(project))
         extension.installationDir.convention(SnykConventions.installationDir.getDirectoryValueProvider(project).orElse(
                 project.layout.dir(extension.version.map { version ->
-                    new File(project.gradle.gradleUserHomeDir, "atlas-snyk/${version}")
+                    new File(project.gradle.gradleUserHomeDir, "atlas-snyk/snyk/${version}")
                 })
         ))
 
@@ -359,6 +408,7 @@ class SnykPlugin implements Plugin<Project>, ProjectRegistrationHandler {
         extension.reportsDir.convention(SnykConventions.reportsDir.getDirectoryValueProvider(project))
         extension.jsonReportsEnabled.convention(SnykConventions.jsonReportsEnabled.getBooleanValueProvider(project))
         extension.sarifReportsEnabled.convention(SnykConventions.sarifReportsEnabled.getBooleanValueProvider(project))
+        extension.htmlReportsEnabled.convention(SnykConventions.htmlReportsEnabled.getBooleanValueProvider(project))
         extension
 
     }
@@ -446,7 +496,22 @@ class SnykPlugin implements Plugin<Project>, ProjectRegistrationHandler {
         })
     }
 
-    private static void registerSnykInstall(Project project, SnykRootPluginExtension extension, TaskProvider<SnykInstall> snykInstall) {
+    private static void registerSnykToHtmlInstall(Project project, SnykToHtmlPluginExtension extension) {
+        project.tasks.withType(SnykToHtmlInstall).configureEach { installTask ->
+            installTask.description = "Install snyk-to-html helper tool"
+            installTask.installationDir.convention(extension.installationDir)
+            installTask.executableName.convention(extension.executableName)
+            installTask.version.convention(extension.version)
+        }
+
+        project.tasks.withType(SnykCheckBase).configureEach({
+            if (extension.autoDownload.get() && it.reports.html.required.get()) {
+                it.dependsOn(extension.snykToHtmlInstall)
+            }
+        })
+    }
+
+    private static void registerSnykInstall(Project project, SnykRootPluginExtension extension) {
         project.tasks.withType(SnykInstall).configureEach { installTask ->
             installTask.description = "Install snyk cli"
             installTask.installationDir.convention(extension.installationDir)
@@ -456,7 +521,7 @@ class SnykPlugin implements Plugin<Project>, ProjectRegistrationHandler {
 
         project.tasks.withType(SnykTask).configureEach {
             if (extension.autoDownload.get()) {
-                it.dependsOn(snykInstall)
+                it.dependsOn(extension.snykInstall)
             }
         }
     }
