@@ -23,11 +23,11 @@ import com.wooga.spock.extensions.snyk.interceptor.SnykSharedFieldInterceptor
 import org.spockframework.runtime.extension.AbstractAnnotationDrivenExtension
 import org.spockframework.runtime.model.FieldInfo
 
-class SnykExtension extends AbstractAnnotationDrivenExtension<Snyk> {
-    @Override
-    void visitFieldAnnotation(Snyk annotation, FieldInfo field) {
-        SnykInterceptor interceptor
+class SnykToHtmlExtension extends AbstractAnnotationDrivenExtension<SnykToHtml> {
 
+    @Override
+    void visitFieldAnnotation(SnykToHtml annotation, FieldInfo field) {
+        SnykInterceptor interceptor
         def wrapper = new SnykSpockAnnotation() {
             @Override
             String getExecutableName() {
@@ -42,15 +42,15 @@ class SnykExtension extends AbstractAnnotationDrivenExtension<Snyk> {
             @Override
             String getSnykDownloadURL() {
                 if(PlatformUtils.isWindows()) {
-                    return "https://static.snyk.io/cli/${version}/snyk-win.exe"
+                    return "https://static.snyk.io/snyk-to-html/${version}/snyk-to-html-win.exe"
                 }
 
                 if(PlatformUtils.isMac()) {
-                    return "https://static.snyk.io/cli/${version}/snyk-macos"
+                    return "https://static.snyk.io/snyk-to-html/${version}/snyk-to-html-macos"
                 }
 
                 if(PlatformUtils.isLinux()) {
-                    return "https://static.snyk.io/cli/${version}/snyk-linux"
+                    return "https://static.snyk.io/snyk-to-html/${version}/snyk-to-html-linux"
                 }
             }
         }
@@ -64,3 +64,4 @@ class SnykExtension extends AbstractAnnotationDrivenExtension<Snyk> {
         interceptor.install(field)
     }
 }
+

@@ -1,3 +1,19 @@
+/*
+ * Copyright 2022 Wooga GmbH
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *        http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package wooga.gradle.snyk.tasks
 
 
@@ -33,34 +49,8 @@ class SnykInstallIntegrationSpec extends SnykInstallBaseIntegrationSpec<SnykInst
         data
     }
 
-    def "install snyk using plugin defaults"() {
-        given:
-        def pluginInstallTask = "snykInstall"
-
-        and: "snyk plugin applied with conventions"
-        buildFile << """
-            ${applyPlugin(SnykPlugin)}
-        """.stripIndent()
-
-        and: "a future snyk executable"
-        File expectedSnykFile = new File("${getGradleUserHome()}/atlas-snyk/latest/${isWindows() ? "snyk.exe" : "snyk"}")
-        if (expectedSnykFile.exists()) {
-            expectedSnykFile.delete()
-        }
-
-        when:
-        def result = runTasksSuccessfully(pluginInstallTask)
-
-        then:
-        !result.wasSkipped(pluginInstallTask)
-
-        expectedSnykFile.file
-        expectedSnykFile.exists()
-        expectedSnykFile.canExecute()
-
-        def process = Runtime.runtime.exec([expectedSnykFile.absolutePath, "--version"] as String[])
-        process.waitFor() == 0
-    }
+    String pluginInstallTaskName = "snykInstall"
+    File defaultInstallLocation = new File("${getGradleUserHome()}/atlas-snyk/snyk/latest/${isWindows() ? "snyk.exe" : "snyk"}")
 
     @Override
     String downloadRequestPath(String version, String file) {

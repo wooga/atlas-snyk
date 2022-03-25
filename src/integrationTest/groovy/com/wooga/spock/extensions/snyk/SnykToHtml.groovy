@@ -14,22 +14,20 @@
  * limitations under the License.
  */
 
-package wooga.gradle.snyk.tasks
-/**
- * The {@code Report} task has the same functionality as {@link Test} task type.
- * The main difference is that the {@code Report} task never fails and will
- * create json reports by default.
- *
- * @see wooga.gradle.snyk.tasks.Test
- */
-class Report extends SnykCheckBase {
+package com.wooga.spock.extensions.snyk
 
-    Report() {
-        reports.html.required.set(true)
-    }
+import org.spockframework.runtime.extension.ExtensionAnnotation
 
-    @Override
-    protected Boolean getIgnoreExitValue() {
-        true
-    }
+import java.lang.annotation.ElementType
+import java.lang.annotation.Retention
+import java.lang.annotation.RetentionPolicy
+import java.lang.annotation.Target
+
+@Retention(RetentionPolicy.RUNTIME)
+@Target([ElementType.FIELD, ElementType.METHOD])
+@ExtensionAnnotation(SnykToHtmlExtension.class)
+
+@interface SnykToHtml {
+    String executableName() default "snyk-to-html"
+    String version() default "latest"
 }

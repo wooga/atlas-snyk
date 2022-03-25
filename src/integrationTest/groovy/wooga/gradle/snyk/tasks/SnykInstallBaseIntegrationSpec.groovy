@@ -1,3 +1,19 @@
+/*
+ * Copyright 2022 Wooga GmbH
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *        http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package wooga.gradle.snyk.tasks
 
 import com.wooga.gradle.test.PropertyQueryTaskWriter
@@ -9,6 +25,7 @@ import spock.lang.Unroll
 import spock.util.environment.RestoreSystemProperties
 import wooga.gradle.snyk.SnykInstallSpec
 import wooga.gradle.snyk.SnykIntegrationSpec
+import wooga.gradle.snyk.SnykPlugin
 
 import javax.net.ssl.HttpsURLConnection
 import java.lang.reflect.ParameterizedType
@@ -60,6 +77,33 @@ abstract class SnykInstallBaseIntegrationSpec<T extends SnykInstallSpec> extends
     }
 
     abstract List<InstallTestModel> getInstallTestVersions()
+    abstract String getPluginInstallTaskName()
+    abstract File getDefaultInstallLocation()
+
+    def "install executable using plugin defaults"() {
+        given: "snyk plugin applied with conventions"
+        buildFile << """
+            ${applyPlugin(SnykPlugin)}
+        """.stripIndent()
+
+        and: "a future executable"
+        File expectedSnykFile = defaultInstallLocation
+        if (expectedSnykFile.exists()) {
+            expectedSnykFile.delete()
+        }
+
+        when:
+        def result = runTasksSuccessfully(pluginInstallTaskName)
+
+        then:
+        !result.wasSkipped(pluginInstallTaskName)
+
+        expectedSnykFile.file
+        expectedSnykFile.exists()
+        expectedSnykFile.canExecute()
+
+        "${expectedSnykFile.absolutePath} --help".execute().waitFor() == 0
+    }
 
     @Unroll("installs valid snyk executable file for version #version to target directory")
     def "installs given snyk version on target directory for macOS"() {

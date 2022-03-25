@@ -101,6 +101,7 @@ abstract class SnykTask extends DefaultTask
             }
         })
 
+        postAction(execResult)
         if(!ignoreExitValue) {
             handleExitCode(execResult.exitValue)
         }
@@ -110,6 +111,9 @@ abstract class SnykTask extends DefaultTask
         List<String> args = new ArrayList<String>()
         addMainOptions(args)
         args
+    }
+
+    void postAction(ExecResult ignore) {
     }
 
     static void handleExitCode(int exitValue) {

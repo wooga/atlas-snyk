@@ -20,9 +20,32 @@ import org.gradle.api.Action
 import org.gradle.api.Project
 import org.gradle.api.provider.Property
 import org.gradle.api.provider.Provider
+import org.gradle.api.tasks.TaskProvider
 import org.gradle.util.ConfigureUtil
+import wooga.gradle.snyk.tasks.SnykInstall
 
 trait SnykRootPluginExtension implements SnykPluginExtension, SnykInstallSpec, SnykStrategySpec {
+
+    abstract SnykToHtmlPluginExtension getSnykToHtml()
+
+    void snykToHtml(Action<SnykToHtmlPluginExtension> action) {
+        action.execute(snykToHtml)
+    }
+
+    void snykToHtml(Closure configure) {
+        snykToHtml(ConfigureUtil.configureUsing(configure))
+    }
+
+    abstract TaskProvider<SnykInstall> getSnykInstall()
+
+    void snykInstall(Action<SnykInstall> action) {
+        snykInstall.configure(action)
+    }
+
+    void snykInstall(Closure configure) {
+        snykInstall.configure(ConfigureUtil.configureUsing(configure))
+    }
+
     private final Property<Boolean> autoDownload = objects.property(Boolean)
 
     /**
