@@ -16,6 +16,8 @@
 
 package wooga.gradle.snyk
 
+import groovy.transform.stc.ClosureParams
+import groovy.transform.stc.FromString
 import org.gradle.api.Action
 import org.gradle.api.Project
 import org.gradle.api.file.Directory
@@ -45,7 +47,7 @@ trait SnykPluginExtension implements
         snykTest.configure(action)
     }
 
-    void snykTest(Closure configure) {
+    void snykTest(@ClosureParams(value = FromString.class, options = ["wooga.gradle.snyk.tasks.Test"]) Closure configure) {
         snykTest.configure(ConfigureUtil.configureUsing(configure))
     }
 
@@ -53,7 +55,7 @@ trait SnykPluginExtension implements
         snykMonitor.configure(action)
     }
 
-    void snykMonitor(Closure configure) {
+    void snykMonitor(@ClosureParams(value = FromString.class, options = ["wooga.gradle.snyk.tasks.Monitor"]) Closure configure) {
         snykMonitor.configure(ConfigureUtil.configureUsing(configure))
     }
 
@@ -61,7 +63,7 @@ trait SnykPluginExtension implements
         snykReport.configure(action)
     }
 
-    void snykReport(Closure configure) {
+    void snykReport(@ClosureParams(value = FromString.class, options = ["wooga.gradle.snyk.tasks.Report"]) Closure configure) {
         snykReport.configure(ConfigureUtil.configureUsing(configure))
     }
 

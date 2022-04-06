@@ -16,6 +16,8 @@
 
 package wooga.gradle.snyk
 
+import groovy.transform.stc.ClosureParams
+import groovy.transform.stc.FromString
 import org.gradle.api.Action
 import org.gradle.api.Project
 import org.gradle.api.provider.Property
@@ -32,7 +34,7 @@ trait SnykRootPluginExtension implements SnykPluginExtension, SnykInstallSpec, S
         action.execute(snykToHtml)
     }
 
-    void snykToHtml(Closure configure) {
+    void snykToHtml(@ClosureParams(value = FromString.class, options = ["wooga.gradle.snyk.SnykToHtmlPluginExtension"]) Closure configure) {
         snykToHtml(ConfigureUtil.configureUsing(configure))
     }
 
@@ -42,7 +44,7 @@ trait SnykRootPluginExtension implements SnykPluginExtension, SnykInstallSpec, S
         snykInstall.configure(action)
     }
 
-    void snykInstall(Closure configure) {
+    void snykInstall(@ClosureParams(value = FromString.class, options = ["wooga.gradle.snyk.tasks.SnykInstall"]) Closure configure) {
         snykInstall.configure(ConfigureUtil.configureUsing(configure))
     }
 
@@ -98,7 +100,7 @@ trait SnykRootPluginExtension implements SnykPluginExtension, SnykInstallSpec, S
      * @param action a configuration closure which gets with the newly added [snyk] extension.
      * @return a {@link SnykPluginExtension} object
      */
-    SnykPluginExtension registerProject(File project, Closure configure) {
+    SnykPluginExtension registerProject(File project, @ClosureParams(value = FromString.class, options = ["wooga.gradle.snyk.SnykPluginExtension"]) Closure configure) {
         registerProject(project, ConfigureUtil.configureUsing(configure))
     }
 
@@ -138,7 +140,7 @@ trait SnykRootPluginExtension implements SnykPluginExtension, SnykInstallSpec, S
      * @param configure configuration closure which gets with the newly added [snyk] extension on the subproject
      * @return a {@link SnykPluginExtension} object
      */
-    SnykPluginExtension registerProject(Project subProject, Closure configure) {
+    SnykPluginExtension registerProject(Project subProject, @ClosureParams(value = FromString.class, options = ["wooga.gradle.snyk.SnykPluginExtension"]) Closure configure) {
         registerProject(subProject, ConfigureUtil.configureUsing(configure))
     }
 
@@ -171,7 +173,7 @@ trait SnykRootPluginExtension implements SnykPluginExtension, SnykInstallSpec, S
      * @param subProjects the projects to register
      * @param configure a configuration closure which gets called for each provided subproject
      */
-    void registerProject(Iterable<Project> subProjects, Closure configure) {
+    void registerProject(Iterable<Project> subProjects, @ClosureParams(value = FromString.class, options = ["wooga.gradle.snyk.SnykPluginExtension"]) Closure configure) {
         subProjects.each {
             registerProject(it, configure)
         }
@@ -214,7 +216,7 @@ trait SnykRootPluginExtension implements SnykPluginExtension, SnykInstallSpec, S
      *
      * @see SnykRootPluginExtension.#registerProject
      */
-    void registerAllSubProjects(Closure configure) {
+    void registerAllSubProjects(@ClosureParams(value = FromString.class, options = ["wooga.gradle.snyk.SnykPluginExtension"]) Closure configure) {
         /* Why not calling `registerAllSubProjects(ConfigureUtil.configureUsing(configure))`?
            This would put the scope of the closure into the wrong extension. We either let
            the actual working implementation of `registerProject(Project, Closure)` convert it,

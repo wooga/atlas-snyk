@@ -16,6 +16,8 @@
 
 package wooga.gradle.snyk
 
+import groovy.transform.stc.ClosureParams
+import groovy.transform.stc.FromString
 import org.gradle.api.Action
 import org.gradle.api.provider.Property
 import org.gradle.api.provider.Provider
@@ -49,7 +51,7 @@ trait SnykToHtmlPluginExtension extends SnykInstallExtension implements SnykToHt
         snykToHtmlInstall.configure(action)
     }
 
-    void snykToHtmlInstall(Closure configure) {
+    void snykToHtmlInstall(@ClosureParams(value = FromString.class, options = ["wooga.gradle.snyk.tasks.SnykToHtmlInstall"]) Closure configure) {
         snykToHtmlInstall.configure(ConfigureUtil.configureUsing(configure))
     }
 }
