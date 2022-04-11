@@ -319,7 +319,7 @@ abstract class SnykCheckBaseIntegrationSpec<T extends SnykTask> extends SnykTask
         "initScript"                     | toProviderSet(property) | osPath("/path/to/initScript2")                              | _                                                 | "Provider<RegularFile>"
         "initScript"                     | toSetter(property)      | osPath("/path/to/initScript3")                              | _                                                 | "File"
         "initScript"                     | toSetter(property)      | osPath("/path/to/initScript4")                              | _                                                 | "Provider<RegularFile>"
-        "initScript"                     | "initScriptOption"      | osPath("/path/to/initScript5")                              | _                                                 | "String"
+        "initScript"                     | property                | osPath("/path/to/initScript5")                              | _                                                 | "String"
 
         "skipUnresolved"                 | toProviderSet(property) | true                                                        | _                                                 | "Boolean"
         "skipUnresolved"                 | toProviderSet(property) | true                                                        | _                                                 | "Provider<Boolean>"
@@ -437,7 +437,7 @@ abstract class SnykCheckBaseIntegrationSpec<T extends SnykTask> extends SnykTask
         "allSubProjects=true"                                                 | "--all-sub-projects"
         "configurationMatching=${wrap("foobar")}"                             | "--configuration-matching=foobar"
         "configurationAttributes=[${wrap("foo")},${wrap("bar")}]"             | "--configuration-attributes=foo,bar"
-        "initScript=${wrapValueBasedOnType("#projectDir#/foo.bar", File)}"    | "--gradle-init-script=${new File("#projectDir#/foo.bar").path}"
+        "initScript=${wrapValueBasedOnType("#projectDir#/foo.bar", File)}"    | "--init-script=${new File("#projectDir#/foo.bar").path}"
         "reachable=true"                                                      | "--reachable"
         "reachableTimeout=7"                                                  | "--reachable-timeout=7"
         "assetsProjectName=true"                                              | "--assets-project-name"
