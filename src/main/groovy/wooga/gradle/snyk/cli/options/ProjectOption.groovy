@@ -22,7 +22,7 @@ enum ProjectOption implements OptionSpec {
     allSubProjects("--all-sub-projects", new SnykBooleanOption()),
     configurationMatching("--configuration-matching", new SnykStringOption()),
     configurationAttributes("--configuration-attributes", new SnykListOption(String.class)),
-    initScript("--gradle-init-script", new SnykFileOption()),
+    initScript("--init-script", new SnykFileOption()),
 
     // Maven, Gradle
     reachable("--reachable", new SnykBooleanOption()),

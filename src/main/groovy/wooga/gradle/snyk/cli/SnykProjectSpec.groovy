@@ -213,10 +213,12 @@ trait SnykProjectSpec extends BaseSpec {
         initScript.set(value)
     }
 
+    // We don't use 'init-script' as the option name since it's already used  by gradle:
+    // https://docs.gradle.org/current/userguide/init_scripts.html
     @Option(option = "gradle-init-script", description = """
     Use for projects that contain a Gradle initialization script.
     """)
-    void initScriptOption(String value) {
+    void initScript(String value) {
         initScript.set(layout.projectDirectory.file(value))
     }
 
