@@ -15,7 +15,10 @@
  */
 
 plugins {
-    id 'net.wooga.plugins' version '3.0.0'
+    id 'net.wooga.plugins' version '3.1.0'
+    id 'net.wooga.snyk' version '0.10.0'
+    id "net.wooga.snyk-gradle-plugin" version "0.2.0"
+    id "net.wooga.cve-dependency-resolution" version "0.4.0"
 }
 
 group 'net.wooga.gradle'
@@ -41,10 +44,15 @@ github {
     repositoryName = "wooga/atlas-snyk"
 }
 
+cveHandler {
+    configurations("compileClasspath", "runtimeClasspath", "testCompileClasspath", "testRuntimeClasspath", "integrationTestCompileClasspath", "integrationTestRuntimeClasspath")
+}
+
+
 dependencies {
     implementation 'commons-codec:commons-codec:1.15'
     implementation 'org.ysb33r.gradle:grolifant60:1.3.3'
-    implementation 'com.wooga.gradle:gradle-commons:[1,2)'
-    testImplementation 'com.wooga.gradle:gradle-commons-test:[1,2)'
+    implementation 'com.wooga.gradle:gradle-commons:[1,2['
+    testImplementation 'com.wooga.gradle:gradle-commons-test:[1,2['
     testImplementation 'org.mock-server:mockserver-junit-rule:5.13.2'
 }

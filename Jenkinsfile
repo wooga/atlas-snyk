@@ -17,7 +17,9 @@
 @Library('github.com/wooga/atlas-jenkins-pipeline@1.x') _
 
 withCredentials([string(credentialsId: 'atlas_plugins_sonar_token', variable: 'sonar_token'),
-                 string(credentialsId: 'snyk-integration-token', variable: 'ATLAS_SNYK_INTEGRATION_TOKEN')]) {
+                 string(credentialsId: 'snyk-integration-token', variable: 'ATLAS_SNYK_INTEGRATION_TOKEN'),
+                 string(credentialsId: 'atlas_plugins_snyk_token', variable: 'SNYK_TOKEN')
+]) {
     buildGradlePlugin platforms: ['macos','windows','linux'],
                       sonarToken: sonar_token
 }
