@@ -28,7 +28,7 @@ pluginBundle {
 
 gradlePlugin {
     plugins {
-        plugins {
+        snyk {
             id = 'net.wooga.snyk'
             displayName = 'Snyk Gradle plugin'
             description = 'a snyk plugin for Gradle.'
