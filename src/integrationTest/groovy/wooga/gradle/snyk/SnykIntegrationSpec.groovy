@@ -104,44 +104,6 @@ class SnykIntegrationSpec extends IntegrationSpec {
         new File(gradleUserHomeEnv)
     }
 
-    protected static File generateBatchWrapper(String fileName, Boolean printEnvironment = false, File baseDirectory = null) {
-        File wrapper
-
-        wrapper = Files.createTempFile(fileName, ".bat").toFile()
-        wrapper.deleteOnExit()
-        wrapper.executable = true
-        if (PlatformUtils.windows) {
-            wrapper << """
-                    @echo off
-                    echo [ARGUMENTS]:
-                    echo %*
-                """.stripIndent()
-
-            if (printEnvironment) {
-                wrapper << """
-                    echo [ENVIRONMENT]:
-                    set
-                """.stripIndent()
-            }
-
-        } else {
-            wrapper << """
-                    #!/usr/bin/env bash
-                    echo [ARGUMENTS]:
-                    echo \$@
-                """.stripIndent()
-
-            if (printEnvironment) {
-                wrapper << """
-                    echo [ENVIRONMENT]:
-                    env
-                """.stripIndent()
-            }
-        }
-
-        wrapper
-    }
-
     void setSnykWrapper() {
         def snykWrapper = generateBatchWrapper("snyk-wrapper")
         def wrapperDir = snykWrapper.parent

@@ -63,44 +63,6 @@ abstract class SnykTaskIntegrationSpec<T extends SnykTask> extends SnykIntegrati
         """.stripIndent()
     }
 
-    protected static File generateBatchWrapper(String fileName, Boolean printEnvironment = false) {
-        File wrapper
-
-        wrapper = Files.createTempFile(fileName, ".bat").toFile()
-        wrapper.deleteOnExit()
-        wrapper.executable = true
-        if (PlatformUtils.windows) {
-            wrapper << """
-                    @echo off
-                    echo [ARGUMENTS]:
-                    echo %*
-                """.stripIndent()
-
-            if (printEnvironment) {
-                wrapper << """
-                    echo [ENVIRONMENT]:
-                    set
-                """.stripIndent()
-            }
-
-        } else {
-            wrapper << """
-                    #!/usr/bin/env bash
-                    echo [ARGUMENTS]:
-                    echo \$@
-                """.stripIndent()
-
-            if (printEnvironment) {
-                wrapper << """
-                    echo [ENVIRONMENT]:
-                    env
-                """.stripIndent()
-            }
-        }
-
-        wrapper
-    }
-
     void setSnykWrapper(Boolean setDummyToken = true, String object = extensionName, Boolean printEnvironment = false, Boolean logToStdout = false) {
         def snykWrapper = generateBatchWrapper("snyk-wrapper", printEnvironment)
         def wrapperDir = snykWrapper.parent
