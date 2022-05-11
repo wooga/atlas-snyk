@@ -28,4 +28,4 @@ pluginManagement {
   }
 }
 
-rootProject.name = 'atlas-snyk'
+rootProject.name = 'snyk'
