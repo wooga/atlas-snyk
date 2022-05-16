@@ -17,15 +17,16 @@
 package wooga.gradle.snyk.tasks
 
 
-import com.wooga.gradle.test.PropertyQueryTaskWriter
+import com.wooga.gradle.test.queries.PropertyQuery
+import com.wooga.gradle.test.queries.TestValue
+import com.wooga.gradle.test.writers.CommandLinePropertyEvaluation
+import com.wooga.gradle.test.writers.PropertyGetterTaskWriter
+import com.wooga.gradle.test.writers.PropertySetInvocation
+import com.wooga.gradle.test.writers.PropertySetterWriter
 import spock.lang.Unroll
 import wooga.gradle.snyk.cli.FailOnOption
 import wooga.gradle.snyk.cli.SeverityThresholdOption
 import wooga.gradle.snyk.cli.VulnerablePathsOption
-
-import static com.wooga.gradle.PlatformUtils.escapedPath
-import static com.wooga.gradle.test.PropertyUtils.toProviderSet
-import static com.wooga.gradle.test.PropertyUtils.toSetter
 
 abstract class SnykCheckBaseIntegrationSpec<T extends SnykTask> extends SnykTaskIntegrationSpec<T> {
 
@@ -33,306 +34,295 @@ abstract class SnykCheckBaseIntegrationSpec<T extends SnykTask> extends SnykTask
 
     @Unroll("can set property #property with cli option #cliOption")
     def "can set property via cli option"() {
-        given: "a task to read back the value"
-        def query = new PropertyQueryTaskWriter("${subjectUnderTestName}.${property}")
-        query.write(buildFile)
 
-        and: "tasks to execute"
-        def tasks = [subjectUnderTestName, cliOption]
-        if (rawValue != _) {
-            tasks.add(value)
-        }
-        tasks.add(query.taskName)
-
-        and: "disable subject under test to no fail"
+        given: "disable subject under test to no fail"
         appendToSubjectTask("enabled=false")
 
-        when:
-        def result = runTasksSuccessfully(*tasks)
-
-        then:
-        query.matches(result, expectedValue)
+        expect:
+        runPropertyQuery(subjectUnderTestName, getter, setter).matches(value)
 
         where:
-        property                         | cliOption                          | rawValue                                   | returnValue | type
-        "allProjects"                    | "--all-projects"                   | _                                          | true        | "Boolean"
-        "detectionDepth"                 | "--detection-depth"                | 22                                         | _           | "Integer"
-        "exclude"                        | "--exclude"                        | [osPath("/path/one"), osPath("/path/two")] | _           | "CLIList"
-        "pruneRepeatedSubDependencies"   | "--prune-repeated-subdependencies" | _                                          | true        | "Boolean"
-        "printDependencies"              | "--print-deps"                     | _                                          | true        | "Boolean"
-        "remoteRepoUrl"                  | "--remote-repo-url"                | "https://some/url"                         | _           | "CLIString"
-        "includeDevelopmentDependencies" | "--dev"                            | _                                          | true        | "Boolean"
-        "orgName"                        | "--org"                            | "testOrg"                                  | _           | "CLIString"
-        "allProjects"                    | "--all-projects"                   | _                                          | true        | "Boolean"
-        "ignorePolicy"                   | "--ignore-policy"                  | _                                          | true        | "Boolean"
-        "showVulnerablePaths"            | "--show-vulnerable-paths"          | VulnerablePathsOption.all                  | _           | "CLIString"
-        "projectName"                    | "--project-name"                   | "some-project"                             | _           | "CLIString"
-        "targetReference"                | "--target-reference"               | "some-reference"                           | _           | "CLIString"
-        "policyPath"                     | "--policy-path"                    | osPath("/path/to/policy.snyk")             | _           | "CLIString"
-        "printJson"                      | "--json"                           | _                                          | true        | "Boolean"
-        "jsonOutputPath"                 | "--json-file-output"               | osPath("/path/to/output.json")             | _           | "CLIString"
-        "printSarif"                     | "--sarif"                          | _                                          | true        | "Boolean"
-        "sarifOutputPath"                | "--sarif-file-output"              | osPath("/path/to/output.sarif")            | _           | "CLIString"
-        "severityThreshold"              | "--severity-threshold"             | SeverityThresholdOption.low                | _           | "CLIString"
-        "failOn"                         | "--fail-on"                        | FailOnOption.upgradable                    | _           | "CLIString"
+        property                         | cliOption                          | value                                      | type
+        "allProjects"                    | "--all-projects"                   | true                                       | "Boolean"
+        "detectionDepth"                 | "--detection-depth"                | 22                                         | "Integer"
+        "exclude"                        | "--exclude"                        | [osPath("/path/one"), osPath("/path/two")] | "CLIList"
+        "pruneRepeatedSubDependencies"   | "--prune-repeated-subdependencies" | true                                       | "Boolean"
+        "printDependencies"              | "--print-deps"                     | true                                       | "Boolean"
+        "remoteRepoUrl"                  | "--remote-repo-url"                | "https://some/url"                         | "CLIString"
+        "includeDevelopmentDependencies" | "--dev"                            | true                                       | "Boolean"
+        "orgName"                        | "--org"                            | "testOrg"                                  | "CLIString"
+        "allProjects"                    | "--all-projects"                   | true                                       | "Boolean"
+        "ignorePolicy"                   | "--ignore-policy"                  | true                                       | "Boolean"
+        "showVulnerablePaths"            | "--show-vulnerable-paths"          | VulnerablePathsOption.all                  | "CLIString"
+        "projectName"                    | "--project-name"                   | "some-project"                             | "CLIString"
+        "targetReference"                | "--target-reference"               | "some-reference"                           | "CLIString"
+        "policyPath"                     | "--policy-path"                    | osPath("/path/to/policy.snyk")             | "CLIString"
+        "printJson"                      | "--json"                           | true                                       | "Boolean"
+        "jsonOutputPath"                 | "--json-file-output"               | osPath("/path/to/output.json")             | "CLIString"
+        "printSarif"                     | "--sarif"                          | true                                       | "Boolean"
+        "sarifOutputPath"                | "--sarif-file-output"              | osPath("/path/to/output.sarif")            | "CLIString"
+        "severityThreshold"              | "--severity-threshold"             | SeverityThresholdOption.low                | "CLIString"
+        "failOn"                         | "--fail-on"                        | FailOnOption.upgradable                    | "CLIString"
 
-        "assetsProjectName"              | "--assets-project-name"            | _                                          | true        | "Boolean"
-        "packagesFolder"                 | "--packages-folder"                | osPath("/path/to/packages")                | _           | "CLIString"
-        "projectNamePrefix"              | "--project-name-prefix"            | "some_prefix"                              | _           | "CLIString"
+        "assetsProjectName"              | "--assets-project-name"            | true                                       | "Boolean"
+        "packagesFolder"                 | "--packages-folder"                | osPath("/path/to/packages")                | "CLIString"
+        "projectNamePrefix"              | "--project-name-prefix"            | "some_prefix"                              | "CLIString"
 
-        "strictOutOfSync"                | "--strict-out-of-sync"             | _                                          | true        | "Boolean"
+        "strictOutOfSync"                | "--strict-out-of-sync"             | true                                       | "Boolean"
 
-        "insecure"                       | "--insecure"                       | _                                          | true        | "Boolean"
+        "insecure"                       | "--insecure"                       | true                                       | "Boolean"
 
-        "scanAllUnmanaged"               | "--scan-all-unmanaged"             | _                                          | true        | "Boolean"
-        "reachable"                      | "--reachable"                      | _                                          | true        | "Boolean"
-        "reachableTimeout"               | "--reachable-timeout"              | 22                                         | _           | "Integer"
+        "scanAllUnmanaged"               | "--scan-all-unmanaged"             | true                                       | "Boolean"
+        "reachable"                      | "--reachable"                      | true                                       | "Boolean"
+        "reachableTimeout"               | "--reachable-timeout"              | 22                                         | "Integer"
 
-        "subProject"                     | "--sub-project"                    | "sub-project-1"                            | _           | "CLIString"
-        "allSubProjects"                 | "--all-sub-projects"               | _                                          | true        | "Boolean"
-        "configurationMatching"          | "--configuration-matching"         | "someConfig"                               | _           | "CLIString"
-        "configurationAttributes"        | "--configuration-attributes"       | ["attr1", "attr2"]                         | _           | "CLIList"
-        "initScript"                     | "--gradle-init-script"             | osPath("/path/to/init-script")             | _           | "CLIString"
+        "subProject"                     | "--sub-project"                    | "sub-project-1"                            | "CLIString"
+        "allSubProjects"                 | "--all-sub-projects"               | true                                       | "Boolean"
+        "configurationMatching"          | "--configuration-matching"         | "someConfig"                               | "CLIString"
+        "configurationAttributes"        | "--configuration-attributes"       | ["attr1", "attr2"]                         | "CLIList"
+        "initScript"                     | "--gradle-init-script"             | osPath("/path/to/init-script")             | "CLIString"
 
-        "command"                        | "--command"                        | "someCommand"                              | _           | "CLIString"
-        "skipUnresolved"                 | "--skip-unresolved"                | _                                          | true        | "Boolean"
+        "command"                        | "--command"                        | "someCommand"                              | "CLIString"
+        "skipUnresolved"                 | "--skip-unresolved"                | true                                       | "Boolean"
 
-        "yarnWorkspaces"                 | "--yarn-workspaces"                | _                                          | true        | "Boolean"
+        "yarnWorkspaces"                 | "--yarn-workspaces"                | true                                       | "Boolean"
 
-        "packageFile"                    | "--file"                           | osPath("/path/to/package")                 | _           | "CLIString"
-        "packageManager"                 | "--package-manager"                | "someValue"                                | _           | "CLIString"
+        "packageFile"                    | "--file"                           | osPath("/path/to/package")                 | "CLIString"
+        "packageManager"                 | "--package-manager"                | "someValue"                                | "CLIString"
 
-        value = wrapValueBasedOnType(rawValue, type, wrapValueFallback)
-        expectedValue = returnValue == _ ? rawValue : returnValue
+        setter = new PropertySetterWriter(subjectUnderTestName, property)
+            .set(value, type)
+            .toCommandLine(cliOption)
+            .serialize(wrapValueFallback)
+
+        getter = new PropertyGetterTaskWriter(setter)
     }
 
     @Unroll("can set property #property with #method and type #type")
     def "can set property SnykTask"() {
-        given: "a task to read back the value"
-        def query = new PropertyQueryTaskWriter("${subjectUnderTestName}.${property}")
-        query.write(buildFile)
 
-        and: "a set property"
-        appendToSubjectTask("${method}($value)")
+        given: "disable subject under test to no fail"
+        appendToSubjectTask("enabled=false")
 
-        when:
-        def result = runTasksSuccessfully(query.taskName)
-
-        then:
-        query.matches(result, expectedValue)
+        expect:
+        runPropertyQuery(subjectUnderTestName, getter, setter).matches(rawValue)
 
         where:
-        property                         | method                  | rawValue                                                    | returnValue                                       | type
-        "allProjects"                    | toProviderSet(property) | true                                                        | _                                                 | "Boolean"
-        "allProjects"                    | toProviderSet(property) | false                                                       | _                                                 | "Provider<Boolean>"
-        "allProjects"                    | toSetter(property)      | true                                                        | _                                                 | "Boolean"
-        "allProjects"                    | toSetter(property)      | false                                                       | _                                                 | "Provider<Boolean>"
+        property                         | method                                              | type                                | rawValue
+        "allProjects"                    | PropertySetInvocation.providerSet                   | "Boolean"                           | true
+        "allProjects"                    | PropertySetInvocation.providerSet                   | "Provider<Boolean>"                 | false
+        "allProjects"                    | PropertySetInvocation.setter                        | "Boolean"                           | true
+        "allProjects"                    | PropertySetInvocation.setter                        | "Provider<Boolean>"                 | false
 
-        "detectionDepth"                 | toProviderSet(property) | 1                                                           | _                                                 | "Integer"
-        "detectionDepth"                 | toProviderSet(property) | 2                                                           | _                                                 | "Provider<Integer>"
-        "detectionDepth"                 | toSetter(property)      | 3                                                           | _                                                 | "Integer"
-        "detectionDepth"                 | toSetter(property)      | 4                                                           | _                                                 | "Provider<Integer>"
-        "detectionDepth"                 | property                | 4                                                           | _                                                 | "String"
+        "detectionDepth"                 | PropertySetInvocation.providerSet                   | "Integer"                           | 1
+        "detectionDepth"                 | PropertySetInvocation.providerSet                   | "Provider<Integer>"                 | 2
+        "detectionDepth"                 | PropertySetInvocation.setter                        | "Integer"                           | 3
+        "detectionDepth"                 | PropertySetInvocation.setter                        | "Provider<Integer>"                 | 4
+        "detectionDepth"                 | PropertySetInvocation.method                        | "String"                            | 4
 
-        "exclude"                        | toProviderSet(property) | [osPath("/path/to/dir")]                                    | _                                                 | "List<File>"
-        "exclude"                        | toProviderSet(property) | [osPath("/path/to/dir")]                                    | _                                                 | "Provider<List<File>>"
-        "exclude"                        | toSetter(property)      | [osPath("/path/to/dir")]                                    | _                                                 | "List<File>"
-        "exclude"                        | toSetter(property)      | [osPath("/path/to/dir")]                                    | _                                                 | "Provider<List<File>>"
-        "exclude"                        | property                | [osPath("/path/to/dir")]                                    | _                                                 | "List<File>"
-        "exclude"                        | property                | osPath("/path/to/dir")                                      | [osPath('/path/to/dir')]                          | "File"
-        "exclude"                        | property                | [osPath("/path/to/dir")]                                    | _                                                 | "File..."
-        "exclude"                        | "excludeOption"         | [osPath('/path/to/dir'), osPath('/path/to/dir2')].join(',') | [osPath('/path/to/dir'), osPath('/path/to/dir2')] | "String"
+        "exclude"                        | PropertySetInvocation.providerSet                   | "List<File>"                        | [osPath("/path/to/dir")]
+        "exclude"                        | PropertySetInvocation.providerSet                   | "Provider<List<File>>"              | [osPath("/path/to/dir")]
+        "exclude"                        | PropertySetInvocation.setter                        | "List<File>"                        | [osPath("/path/to/dir")]
+        "exclude"                        | PropertySetInvocation.setter                        | "Provider<List<File>>"              | [osPath("/path/to/dir")]
+        "exclude"                        | PropertySetInvocation.method                        | "List<File>"                        | [osPath("/path/to/dir")]
+        "exclude"                        | PropertySetInvocation.method                        | "File"                              | TestValue.set(osPath("/path/to/dir")).expectList()
+        "exclude"                        | PropertySetInvocation.method                        | "File..."                           | [osPath("/path/to/dir")]
+        "exclude"                        | PropertySetInvocation.customSetter("excludeOption") | "String"                            | TestValue.join([osPath('/path/to/dir'), osPath('/path/to/dir2')], ",").expectList()
 
-        "pruneRepeatedSubDependencies"   | toProviderSet(property) | true                                                        | _                                                 | "Boolean"
-        "pruneRepeatedSubDependencies"   | toProviderSet(property) | false                                                       | _                                                 | "Provider<Boolean>"
-        "pruneRepeatedSubDependencies"   | toSetter(property)      | true                                                        | _                                                 | "Boolean"
-        "pruneRepeatedSubDependencies"   | toSetter(property)      | false                                                       | _                                                 | "Provider<Boolean>"
+        "pruneRepeatedSubDependencies"   | PropertySetInvocation.providerSet                   | "Boolean"                           | true
+        "pruneRepeatedSubDependencies"   | PropertySetInvocation.providerSet                   | "Provider<Boolean>"                 | false
+        "pruneRepeatedSubDependencies"   | PropertySetInvocation.setter                        | "Boolean"                           | true
+        "pruneRepeatedSubDependencies"   | PropertySetInvocation.setter                        | "Provider<Boolean>"                 | false
 
-        "printDependencies"              | toProviderSet(property) | true                                                        | _                                                 | "Boolean"
-        "printDependencies"              | toProviderSet(property) | false                                                       | _                                                 | "Provider<Boolean>"
-        "printDependencies"              | toSetter(property)      | true                                                        | _                                                 | "Boolean"
-        "printDependencies"              | toSetter(property)      | false                                                       | _                                                 | "Provider<Boolean>"
+        "printDependencies"              | PropertySetInvocation.providerSet                   | "Boolean"                           | true
+        "printDependencies"              | PropertySetInvocation.providerSet                   | "Provider<Boolean>"                 | false
+        "printDependencies"              | PropertySetInvocation.setter                        | "Boolean"                           | true
+        "printDependencies"              | PropertySetInvocation.setter                        | "Provider<Boolean>"                 | false
 
-        "remoteRepoUrl"                  | toProviderSet(property) | "http://remote/url/1"                                       | _                                                 | "String"
-        "remoteRepoUrl"                  | toProviderSet(property) | "http://remote/url/2"                                       | _                                                 | "Provider<String>"
-        "remoteRepoUrl"                  | toSetter(property)      | "http://remote/url/3"                                       | _                                                 | "String"
-        "remoteRepoUrl"                  | toSetter(property)      | "http://remote/url/4"                                       | _                                                 | "Provider<String>"
+        "remoteRepoUrl"                  | PropertySetInvocation.providerSet                   | "String"                            | "http://remote/url/1"
+        "remoteRepoUrl"                  | PropertySetInvocation.providerSet                   | "Provider<String>"                  | "http://remote/url/2"
+        "remoteRepoUrl"                  | PropertySetInvocation.setter                        | "String"                            | "http://remote/url/3"
+        "remoteRepoUrl"                  | PropertySetInvocation.setter                        | "Provider<String>"                  | "http://remote/url/4"
 
-        "includeDevelopmentDependencies" | toProviderSet(property) | true                                                        | _                                                 | "Boolean"
-        "includeDevelopmentDependencies" | toProviderSet(property) | false                                                       | _                                                 | "Provider<Boolean>"
-        "includeDevelopmentDependencies" | toSetter(property)      | true                                                        | _                                                 | "Boolean"
-        "includeDevelopmentDependencies" | toSetter(property)      | false                                                       | _                                                 | "Provider<Boolean>"
+        "includeDevelopmentDependencies" | PropertySetInvocation.providerSet                   | "Boolean"                           | true
+        "includeDevelopmentDependencies" | PropertySetInvocation.providerSet                   | "Provider<Boolean>"                 | false
+        "includeDevelopmentDependencies" | PropertySetInvocation.setter                        | "Boolean"                           | true
+        "includeDevelopmentDependencies" | PropertySetInvocation.setter                        | "Provider<Boolean>"                 | false
 
-        "orgName"                        | toProviderSet(property) | "org1"                                                      | _                                                 | "String"
-        "orgName"                        | toProviderSet(property) | "org2"                                                      | _                                                 | "Provider<String>"
-        "orgName"                        | toSetter(property)      | "org3"                                                      | _                                                 | "String"
-        "orgName"                        | toSetter(property)      | "org4"                                                      | _                                                 | "Provider<String>"
+        "orgName"                        | PropertySetInvocation.providerSet                   | "String"                            | "org1"
+        "orgName"                        | PropertySetInvocation.providerSet                   | "Provider<String>"                  | "org2"
+        "orgName"                        | PropertySetInvocation.setter                        | "String"                            | "org3"
+        "orgName"                        | PropertySetInvocation.setter                        | "Provider<String>"                  | "org4"
 
-        "packageFile"                    | toProviderSet(property) | osPath("/path/to/file1")                                    | _                                                 | "File"
-        "packageFile"                    | toProviderSet(property) | osPath("/path/to/file2")                                    | _                                                 | "Provider<RegularFile>"
-        "packageFile"                    | toSetter(property)      | osPath("/path/to/file3")                                    | _                                                 | "File"
-        "packageFile"                    | toSetter(property)      | osPath("/path/to/file4")                                    | _                                                 | "Provider<RegularFile>"
-        "packageFile"                    | property                | osPath("/path/to/file5")                                    | _                                                 | "String"
+        "packageFile"                    | PropertySetInvocation.providerSet                   | "File"                              | osPath("/path/to/file1")
+        "packageFile"                    | PropertySetInvocation.providerSet                   | "Provider<RegularFile>"             | osPath("/path/to/file2")
+        "packageFile"                    | PropertySetInvocation.setter                        | "File"                              | osPath("/path/to/file3")
+        "packageFile"                    | PropertySetInvocation.setter                        | "Provider<RegularFile>"             | osPath("/path/to/file4")
+        "packageFile"                    | PropertySetInvocation.method                        | "String"                            | osPath("/path/to/file5")
 
-        "packageManager"                 | toProviderSet(property) | "nuget"                                                     | _                                                 | "String"
-        "packageManager"                 | toProviderSet(property) | "paket"                                                     | _                                                 | "Provider<String>"
-        "packageManager"                 | toSetter(property)      | "npm"                                                       | _                                                 | "String"
-        "packageManager"                 | toSetter(property)      | "gradle"                                                    | _                                                 | "Provider<String>"
+        "packageManager"                 | PropertySetInvocation.providerSet                   | "String"                            | "nuget"
+        "packageManager"                 | PropertySetInvocation.providerSet                   | "Provider<String>"                  | "paket"
+        "packageManager"                 | PropertySetInvocation.setter                        | "String"                            | "npm"
+        "packageManager"                 | PropertySetInvocation.setter                        | "Provider<String>"                  | "gradle"
 
-        "ignorePolicy"                   | toProviderSet(property) | true                                                        | _                                                 | "Boolean"
-        "ignorePolicy"                   | toProviderSet(property) | false                                                       | _                                                 | "Provider<Boolean>"
-        "ignorePolicy"                   | toSetter(property)      | true                                                        | _                                                 | "Boolean"
-        "ignorePolicy"                   | toSetter(property)      | false                                                       | _                                                 | "Provider<Boolean>"
+        "ignorePolicy"                   | PropertySetInvocation.providerSet                   | "Boolean"                           | true
+        "ignorePolicy"                   | PropertySetInvocation.providerSet                   | "Provider<Boolean>"                 | false
+        "ignorePolicy"                   | PropertySetInvocation.setter                        | "Boolean"                           | true
+        "ignorePolicy"                   | PropertySetInvocation.setter                        | "Provider<Boolean>"                 | false
 
-        "showVulnerablePaths"            | toProviderSet(property) | VulnerablePathsOption.some                                  | _                                                 | "VulnerablePathsOption"
-        "showVulnerablePaths"            | toProviderSet(property) | VulnerablePathsOption.none                                  | _                                                 | "Provider<VulnerablePathsOption>"
-        "showVulnerablePaths"            | toSetter(property)      | VulnerablePathsOption.all                                   | _                                                 | "VulnerablePathsOption"
-        "showVulnerablePaths"            | toSetter(property)      | VulnerablePathsOption.some                                  | _                                                 | "Provider<VulnerablePathsOption>"
+        "showVulnerablePaths"            | PropertySetInvocation.providerSet                   | "VulnerablePathsOption"             | VulnerablePathsOption.some
+        "showVulnerablePaths"            | PropertySetInvocation.providerSet                   | "Provider<VulnerablePathsOption>"   | VulnerablePathsOption.none
+        "showVulnerablePaths"            | PropertySetInvocation.setter                        | "VulnerablePathsOption"             | VulnerablePathsOption.all
+        "showVulnerablePaths"            | PropertySetInvocation.setter                        | "Provider<VulnerablePathsOption>"   | VulnerablePathsOption.some
 
-        "projectName"                    | toProviderSet(property) | "test1"                                                     | _                                                 | "String"
-        "projectName"                    | toProviderSet(property) | "test2"                                                     | _                                                 | "Provider<String>"
-        "projectName"                    | toSetter(property)      | "test3"                                                     | _                                                 | "String"
-        "projectName"                    | toSetter(property)      | "test4"                                                     | _                                                 | "Provider<String>"
+        "projectName"                    | PropertySetInvocation.providerSet                   | "String"                            | "test1"
+        "projectName"                    | PropertySetInvocation.providerSet                   | "Provider<String>"                  | "test2"
+        "projectName"                    | PropertySetInvocation.setter                        | "String"                            | "test3"
+        "projectName"                    | PropertySetInvocation.setter                        | "Provider<String>"                  | "test4"
 
-        "targetReference"                | toProviderSet(property) | "test_reference_1"                                          | _                                                 | "String"
-        "targetReference"                | toProviderSet(property) | "test_reference_2"                                          | _                                                 | "Provider<String>"
-        "targetReference"                | toSetter(property)      | "test_reference_3"                                          | _                                                 | "String"
-        "targetReference"                | toSetter(property)      | "test_reference_4"                                          | _                                                 | "Provider<String>"
+        "targetReference"                | PropertySetInvocation.providerSet                   | "String"                            | "test_reference_1"
+        "targetReference"                | PropertySetInvocation.providerSet                   | "Provider<String>"                  | "test_reference_2"
+        "targetReference"                | PropertySetInvocation.setter                        | "String"                            | "test_reference_3"
+        "targetReference"                | PropertySetInvocation.setter                        | "Provider<String>"                  | "test_reference_4"
 
-        "policyPath"                     | toProviderSet(property) | osPath("/path/to/file1")                                    | _                                                 | "File"
-        "policyPath"                     | toProviderSet(property) | osPath("/path/to/file2")                                    | _                                                 | "Provider<RegularFile>"
-        "policyPath"                     | toSetter(property)      | osPath("/path/to/file3")                                    | _                                                 | "File"
-        "policyPath"                     | toSetter(property)      | osPath("/path/to/file4")                                    | _                                                 | "Provider<RegularFile>"
-        "policyPath"                     | property                | osPath("/path/to/file5")                                    | _                                                 | "String"
+        "policyPath"                     | PropertySetInvocation.providerSet                   | "File"                              | osPath("/path/to/file1")
+        "policyPath"                     | PropertySetInvocation.providerSet                   | "Provider<RegularFile>"             | osPath("/path/to/file2")
+        "policyPath"                     | PropertySetInvocation.setter                        | "File"                              | osPath("/path/to/file3")
+        "policyPath"                     | PropertySetInvocation.setter                        | "Provider<RegularFile>"             | osPath("/path/to/file4")
+        "policyPath"                     | PropertySetInvocation.method                        | "String"                            | osPath("/path/to/file5")
 
-        "printJson"                      | toProviderSet(property) | true                                                        | _                                                 | "Boolean"
-        "printJson"                      | toProviderSet(property) | true                                                        | _                                                 | "Provider<Boolean>"
-        "printJson"                      | toSetter(property)      | true                                                        | _                                                 | "Boolean"
-        "printJson"                      | toSetter(property)      | true                                                        | _                                                 | "Provider<Boolean>"
+        "printJson"                      | PropertySetInvocation.providerSet                   | "Boolean"                           | true
+        "printJson"                      | PropertySetInvocation.providerSet                   | "Provider<Boolean>"                 | true
+        "printJson"                      | PropertySetInvocation.setter                        | "Boolean"                           | true
+        "printJson"                      | PropertySetInvocation.setter                        | "Provider<Boolean>"                 | true
 
-        "jsonOutputPath"                 | toProviderSet(property) | osPath("/path/to/file1")                                    | _                                                 | "File"
-        "jsonOutputPath"                 | toProviderSet(property) | osPath("/path/to/file2")                                    | _                                                 | "Provider<RegularFile>"
-        "jsonOutputPath"                 | toSetter(property)      | osPath("/path/to/file3")                                    | _                                                 | "File"
-        "jsonOutputPath"                 | toSetter(property)      | osPath("/path/to/file4")                                    | _                                                 | "Provider<RegularFile>"
-        "jsonOutputPath"                 | property                | osPath("/path/to/file5")                                    | _                                                 | "String"
+        "jsonOutputPath"                 | PropertySetInvocation.providerSet                   | "File"                              | osPath("/path/to/file1")
+        "jsonOutputPath"                 | PropertySetInvocation.providerSet                   | "Provider<RegularFile>"             | osPath("/path/to/file2")
+        "jsonOutputPath"                 | PropertySetInvocation.setter                        | "File"                              | osPath("/path/to/file3")
+        "jsonOutputPath"                 | PropertySetInvocation.setter                        | "Provider<RegularFile>"             | osPath("/path/to/file4")
+        "jsonOutputPath"                 | PropertySetInvocation.method                        | "String"                            | osPath("/path/to/file5")
 
-        "printSarif"                     | toProviderSet(property) | true                                                        | _                                                 | "Boolean"
-        "printSarif"                     | toProviderSet(property) | true                                                        | _                                                 | "Provider<Boolean>"
-        "printSarif"                     | toSetter(property)      | true                                                        | _                                                 | "Boolean"
-        "printSarif"                     | toSetter(property)      | true                                                        | _                                                 | "Provider<Boolean>"
+        "printSarif"                     | PropertySetInvocation.providerSet                   | "Boolean"                           | true
+        "printSarif"                     | PropertySetInvocation.providerSet                   | "Provider<Boolean>"                 | true
+        "printSarif"                     | PropertySetInvocation.setter                        | "Boolean"                           | true
+        "printSarif"                     | PropertySetInvocation.setter                        | "Provider<Boolean>"                 | true
 
-        "sarifOutputPath"                | toProviderSet(property) | osPath("/path/to/file1")                                    | _                                                 | "File"
-        "sarifOutputPath"                | toProviderSet(property) | osPath("/path/to/file2")                                    | _                                                 | "Provider<RegularFile>"
-        "sarifOutputPath"                | toSetter(property)      | osPath("/path/to/file3")                                    | _                                                 | "File"
-        "sarifOutputPath"                | toSetter(property)      | osPath("/path/to/file4")                                    | _                                                 | "Provider<RegularFile>"
-        "sarifOutputPath"                | property                | osPath("/path/to/file5")                                    | _                                                 | "String"
+        "sarifOutputPath"                | PropertySetInvocation.providerSet                   | "File"                              | osPath("/path/to/file1")
+        "sarifOutputPath"                | PropertySetInvocation.providerSet                   | "Provider<RegularFile>"             | osPath("/path/to/file2")
+        "sarifOutputPath"                | PropertySetInvocation.setter                        | "File"                              | osPath("/path/to/file3")
+        "sarifOutputPath"                | PropertySetInvocation.setter                        | "Provider<RegularFile>"             | osPath("/path/to/file4")
+        "sarifOutputPath"                | PropertySetInvocation.method                        | "String"                            | osPath("/path/to/file5")
 
-        "severityThreshold"              | toProviderSet(property) | SeverityThresholdOption.low                                 | _                                                 | "SeverityThresholdOption"
-        "severityThreshold"              | toProviderSet(property) | SeverityThresholdOption.medium                              | _                                                 | "Provider<SeverityThresholdOption>"
-        "severityThreshold"              | toSetter(property)      | SeverityThresholdOption.high                                | _                                                 | "SeverityThresholdOption"
-        "severityThreshold"              | toSetter(property)      | SeverityThresholdOption.critical                            | _                                                 | "Provider<SeverityThresholdOption>"
+        "severityThreshold"              | PropertySetInvocation.providerSet                   | "SeverityThresholdOption"           | SeverityThresholdOption.low
+        "severityThreshold"              | PropertySetInvocation.providerSet                   | "Provider<SeverityThresholdOption>" | SeverityThresholdOption.medium
+        "severityThreshold"              | PropertySetInvocation.setter                        | "SeverityThresholdOption"           | SeverityThresholdOption.high
+        "severityThreshold"              | PropertySetInvocation.setter                        | "Provider<SeverityThresholdOption>" | SeverityThresholdOption.critical
 
-        "failOn"                         | toProviderSet(property) | FailOnOption.all                                            | _                                                 | "FailOnOption"
-        "failOn"                         | toProviderSet(property) | FailOnOption.upgradable                                     | _                                                 | "Provider<FailOnOption>"
-        "failOn"                         | toSetter(property)      | FailOnOption.patchable                                      | _                                                 | "FailOnOption"
-        "failOn"                         | toSetter(property)      | FailOnOption.all                                            | _                                                 | "Provider<FailOnOption>"
+        "failOn"                         | PropertySetInvocation.providerSet                   | "FailOnOption"                      | FailOnOption.all
+        "failOn"                         | PropertySetInvocation.providerSet                   | "Provider<FailOnOption>"            | FailOnOption.upgradable
+        "failOn"                         | PropertySetInvocation.setter                        | "FailOnOption"                      | FailOnOption.patchable
+        "failOn"                         | PropertySetInvocation.setter                        | "Provider<FailOnOption>"            | FailOnOption.all
 
-        "compilerArguments"              | toProviderSet(property) | ["--foo", "--bar"]                                          | _                                                 | "List<String>"
-        "compilerArguments"              | toProviderSet(property) | ["--foo", "--bar"]                                          | _                                                 | "Provider<List<String>>"
-        "compilerArguments"              | toSetter(property)      | ["--foo", "--bar"]                                          | _                                                 | "List<String>"
-        "compilerArguments"              | toSetter(property)      | ["--foo", "--bar"]                                          | _                                                 | "Provider<List<String>>"
-        "compilerArguments"              | property                | ["--foo", "--bar"]                                          | _                                                 | "List<String>"
-        "compilerArguments"              | property                | "--foo"                                                     | ["--foo"]                                         | "String"
-        "compilerArguments"              | property                | ["--foo", "--bar"]                                          | _                                                 | "String..."
+        "compilerArguments"              | PropertySetInvocation.providerSet                   | "List<String>"                      | ["--foo", "--bar"]
+        "compilerArguments"              | PropertySetInvocation.providerSet                   | "Provider<List<String>>"            | ["--foo", "--bar"]
+        "compilerArguments"              | PropertySetInvocation.setter                        | "List<String>"                      | ["--foo", "--bar"]
+        "compilerArguments"              | PropertySetInvocation.setter                        | "Provider<List<String>>"            | ["--foo", "--bar"]
+        "compilerArguments"              | PropertySetInvocation.method                        | "List<String>"                      | ["--foo", "--bar"]
+        "compilerArguments"              | PropertySetInvocation.method                        | "String"                            | TestValue.set("--foo").expectList()
+        "compilerArguments"              | PropertySetInvocation.method                        | "String..."                         | ["--foo", "--bar"]
 
-        "assetsProjectName"              | toProviderSet(property) | true                                                        | _                                                 | "Boolean"
-        "assetsProjectName"              | toProviderSet(property) | true                                                        | _                                                 | "Provider<Boolean>"
-        "assetsProjectName"              | toSetter(property)      | true                                                        | _                                                 | "Boolean"
-        "assetsProjectName"              | toSetter(property)      | true                                                        | _                                                 | "Provider<Boolean>"
+        "assetsProjectName"              | PropertySetInvocation.providerSet                   | "Boolean"                           | true
+        "assetsProjectName"              | PropertySetInvocation.providerSet                   | "Provider<Boolean>"                 | true
+        "assetsProjectName"              | PropertySetInvocation.setter                        | "Boolean"                           | true
+        "assetsProjectName"              | PropertySetInvocation.setter                        | "Provider<Boolean>"                 | true
 
-        "packagesFolder"                 | toProviderSet(property) | osPath("/path/to/packages1")                                | _                                                 | "File"
-        "packagesFolder"                 | toProviderSet(property) | osPath("/path/to/packages2")                                | _                                                 | "Provider<Directory>"
-        "packagesFolder"                 | toSetter(property)      | osPath("/path/to/packages3")                                | _                                                 | "File"
-        "packagesFolder"                 | toSetter(property)      | osPath("/path/to/packages4")                                | _                                                 | "Provider<Directory>"
-        "packagesFolder"                 | property                | osPath("/path/to/packages5")                                | _                                                 | "String"
+        "packagesFolder"                 | PropertySetInvocation.providerSet                   | "File"                              | osPath("/path/to/packages1")
+        "packagesFolder"                 | PropertySetInvocation.providerSet                   | "Provider<Directory>"               | osPath("/path/to/packages2")
+        "packagesFolder"                 | PropertySetInvocation.setter                        | "File"                              | osPath("/path/to/packages3")
+        "packagesFolder"                 | PropertySetInvocation.setter                        | "Provider<Directory>"               | osPath("/path/to/packages4")
+        "packagesFolder"                 | PropertySetInvocation.method                        | "String"                            | osPath("/path/to/packages5")
 
-        "projectNamePrefix"              | toProviderSet(property) | "prefix_1"                                                  | _                                                 | "String"
-        "projectNamePrefix"              | toProviderSet(property) | "prefix_2"                                                  | _                                                 | "Provider<String>"
-        "projectNamePrefix"              | toSetter(property)      | "prefix_3"                                                  | _                                                 | "String"
-        "projectNamePrefix"              | toSetter(property)      | "prefix_4"                                                  | _                                                 | "Provider<String>"
+        "projectNamePrefix"              | PropertySetInvocation.providerSet                   | "String"                            | "prefix_1"
+        "projectNamePrefix"              | PropertySetInvocation.providerSet                   | "Provider<String>"                  | "prefix_2"
+        "projectNamePrefix"              | PropertySetInvocation.setter                        | "String"                            | "prefix_3"
+        "projectNamePrefix"              | PropertySetInvocation.setter                        | "Provider<String>"                  | "prefix_4"
 
-        "strictOutOfSync"                | toProviderSet(property) | true                                                        | _                                                 | "Boolean"
-        "strictOutOfSync"                | toProviderSet(property) | true                                                        | _                                                 | "Provider<Boolean>"
-        "strictOutOfSync"                | toSetter(property)      | true                                                        | _                                                 | "Boolean"
-        "strictOutOfSync"                | toSetter(property)      | true                                                        | _                                                 | "Provider<Boolean>"
+        "strictOutOfSync"                | PropertySetInvocation.providerSet                   | "Boolean"                           | true
+        "strictOutOfSync"                | PropertySetInvocation.providerSet                   | "Provider<Boolean>"                 | true
+        "strictOutOfSync"                | PropertySetInvocation.setter                        | "Boolean"                           | true
+        "strictOutOfSync"                | PropertySetInvocation.setter                        | "Provider<Boolean>"                 | true
 
-        "insecure"                       | toProviderSet(property) | true                                                        | _                                                 | "Boolean"
-        "insecure"                       | toProviderSet(property) | true                                                        | _                                                 | "Provider<Boolean>"
-        "insecure"                       | toSetter(property)      | true                                                        | _                                                 | "Boolean"
-        "insecure"                       | toSetter(property)      | true                                                        | _                                                 | "Provider<Boolean>"
+        "insecure"                       | PropertySetInvocation.providerSet                   | "Boolean"                           | true
+        "insecure"                       | PropertySetInvocation.providerSet                   | "Provider<Boolean>"                 | true
+        "insecure"                       | PropertySetInvocation.setter                        | "Boolean"                           | true
+        "insecure"                       | PropertySetInvocation.setter                        | "Provider<Boolean>"                 | true
 
-        "scanAllUnmanaged"               | toProviderSet(property) | true                                                        | _                                                 | "Boolean"
-        "scanAllUnmanaged"               | toProviderSet(property) | true                                                        | _                                                 | "Provider<Boolean>"
-        "scanAllUnmanaged"               | toSetter(property)      | true                                                        | _                                                 | "Boolean"
-        "scanAllUnmanaged"               | toSetter(property)      | true                                                        | _                                                 | "Provider<Boolean>"
+        "scanAllUnmanaged"               | PropertySetInvocation.providerSet                   | "Boolean"                           | true
+        "scanAllUnmanaged"               | PropertySetInvocation.providerSet                   | "Provider<Boolean>"                 | true
+        "scanAllUnmanaged"               | PropertySetInvocation.setter                        | "Boolean"                           | true
+        "scanAllUnmanaged"               | PropertySetInvocation.setter                        | "Provider<Boolean>"                 | true
 
-        "reachable"                      | toProviderSet(property) | true                                                        | _                                                 | "Boolean"
-        "reachable"                      | toProviderSet(property) | true                                                        | _                                                 | "Provider<Boolean>"
-        "reachable"                      | toSetter(property)      | true                                                        | _                                                 | "Boolean"
-        "reachable"                      | toSetter(property)      | true                                                        | _                                                 | "Provider<Boolean>"
+        "reachable"                      | PropertySetInvocation.providerSet                   | "Boolean"                           | true
+        "reachable"                      | PropertySetInvocation.providerSet                   | "Provider<Boolean>"                 | true
+        "reachable"                      | PropertySetInvocation.setter                        | "Boolean"                           | true
+        "reachable"                      | PropertySetInvocation.setter                        | "Provider<Boolean>"                 | true
 
-        "reachableTimeout"               | toProviderSet(property) | 1                                                           | _                                                 | "Integer"
-        "reachableTimeout"               | toProviderSet(property) | 2                                                           | _                                                 | "Provider<Integer>"
-        "reachableTimeout"               | toSetter(property)      | 3                                                           | _                                                 | "Integer"
-        "reachableTimeout"               | toSetter(property)      | 4                                                           | _                                                 | "Provider<Integer>"
-        "reachableTimeout"               | property                | 4                                                           | _                                                 | "String"
+        "reachableTimeout"               | PropertySetInvocation.providerSet                   | "Integer"                           | 1
+        "reachableTimeout"               | PropertySetInvocation.providerSet                   | "Provider<Integer>"                 | 2
+        "reachableTimeout"               | PropertySetInvocation.setter                        | "Integer"                           | 3
+        "reachableTimeout"               | PropertySetInvocation.setter                        | "Provider<Integer>"                 | 4
+        "reachableTimeout"               | PropertySetInvocation.method                        | "String"                            | 4
 
-        "subProject"                     | toProviderSet(property) | "subproject_1"                                              | _                                                 | "String"
-        "subProject"                     | toProviderSet(property) | "subproject_2"                                              | _                                                 | "Provider<String>"
-        "subProject"                     | toSetter(property)      | "subproject_3"                                              | _                                                 | "String"
-        "subProject"                     | toSetter(property)      | "subproject_4"                                              | _                                                 | "Provider<String>"
+        "subProject"                     | PropertySetInvocation.providerSet                   | "String"                            | "subproject_1"
+        "subProject"                     | PropertySetInvocation.providerSet                   | "Provider<String>"                  | "subproject_2"
+        "subProject"                     | PropertySetInvocation.setter                        | "String"                            | "subproject_3"
+        "subProject"                     | PropertySetInvocation.setter                        | "Provider<String>"                  | "subproject_4"
 
-        "allSubProjects"                 | toProviderSet(property) | true                                                        | _                                                 | "Boolean"
-        "allSubProjects"                 | toProviderSet(property) | true                                                        | _                                                 | "Provider<Boolean>"
-        "allSubProjects"                 | toSetter(property)      | true                                                        | _                                                 | "Boolean"
-        "allSubProjects"                 | toSetter(property)      | true                                                        | _                                                 | "Provider<Boolean>"
+        "allSubProjects"                 | PropertySetInvocation.providerSet                   | "Boolean"                           | true
+        "allSubProjects"                 | PropertySetInvocation.providerSet                   | "Provider<Boolean>"                 | true
+        "allSubProjects"                 | PropertySetInvocation.setter                        | "Boolean"                           | true
+        "allSubProjects"                 | PropertySetInvocation.setter                        | "Provider<Boolean>"                 | true
 
-        "configurationMatching"          | toProviderSet(property) | "subproject_1"                                              | _                                                 | "String"
-        "configurationMatching"          | toProviderSet(property) | "subproject_2"                                              | _                                                 | "Provider<String>"
-        "configurationMatching"          | toSetter(property)      | "subproject_3"                                              | _                                                 | "String"
-        "configurationMatching"          | toSetter(property)      | "subproject_4"                                              | _                                                 | "Provider<String>"
+        "configurationMatching"          | PropertySetInvocation.providerSet                   | "String"                            | "subproject_1"
+        "configurationMatching"          | PropertySetInvocation.providerSet                   | "Provider<String>"                  | "subproject_2"
+        "configurationMatching"          | PropertySetInvocation.setter                        | "String"                            | "subproject_3"
+        "configurationMatching"          | PropertySetInvocation.setter                        | "Provider<String>"                  | "subproject_4"
 
-        "configurationAttributes"        | toProviderSet(property) | ["config1", "config2"]                                      | _                                                 | "List<String>"
-        "configurationAttributes"        | toProviderSet(property) | ["config1", "config2"]                                      | _                                                 | "Provider<List<String>>"
-        "configurationAttributes"        | toSetter(property)      | ["config1", "config2"]                                      | _                                                 | "List<String>"
-        "configurationAttributes"        | toSetter(property)      | ["config1", "config2"]                                      | _                                                 | "Provider<List<String>>"
-        "configurationAttributes"        | property                | ["config1", "config2"]                                      | _                                                 | "List<String>"
-        "configurationAttributes"        | property                | "config1"                                                   | ["config1"]                                       | "String"
-        "configurationAttributes"        | property                | ["config1", "config2"]                                      | _                                                 | "String..."
+        "configurationAttributes"        | PropertySetInvocation.providerSet                   | "List<String>"                      | ["config1", "config2"]
+        "configurationAttributes"        | PropertySetInvocation.providerSet                   | "Provider<List<String>>"            | ["config1", "config2"]
+        "configurationAttributes"        | PropertySetInvocation.setter                        | "List<String>"                      | ["config1", "config2"]
+        "configurationAttributes"        | PropertySetInvocation.setter                        | "Provider<List<String>>"            | ["config1", "config2"]
+        "configurationAttributes"        | PropertySetInvocation.method                        | "List<String>"                      | ["config1", "config2"]
+        "configurationAttributes"        | PropertySetInvocation.method                        | "String"                            | TestValue.set("config1").expectList()
+        "configurationAttributes"        | PropertySetInvocation.method                        | "String..."                         | ["config1", "config2"]
 
-        "command"                        | toProviderSet(property) | "command_1"                                                 | _                                                 | "String"
-        "command"                        | toProviderSet(property) | "command_2"                                                 | _                                                 | "Provider<String>"
-        "command"                        | toSetter(property)      | "command_3"                                                 | _                                                 | "String"
-        "command"                        | toSetter(property)      | "command_4"                                                 | _                                                 | "Provider<String>"
+        "command"                        | PropertySetInvocation.providerSet                   | "String"                            | "command_1"
+        "command"                        | PropertySetInvocation.providerSet                   | "Provider<String>"                  | "command_2"
+        "command"                        | PropertySetInvocation.setter                        | "String"                            | "command_3"
+        "command"                        | PropertySetInvocation.setter                        | "Provider<String>"                  | "command_4"
 
-        "initScript"                     | toProviderSet(property) | osPath("/path/to/initScript1")                              | _                                                 | "File"
-        "initScript"                     | toProviderSet(property) | osPath("/path/to/initScript2")                              | _                                                 | "Provider<RegularFile>"
-        "initScript"                     | toSetter(property)      | osPath("/path/to/initScript3")                              | _                                                 | "File"
-        "initScript"                     | toSetter(property)      | osPath("/path/to/initScript4")                              | _                                                 | "Provider<RegularFile>"
-        "initScript"                     | property                | osPath("/path/to/initScript5")                              | _                                                 | "String"
+        "initScript"                     | PropertySetInvocation.providerSet                   | "File"                              | osPath("/path/to/initScript1")
+        "initScript"                     | PropertySetInvocation.providerSet                   | "Provider<RegularFile>"             | osPath("/path/to/initScript2")
+        "initScript"                     | PropertySetInvocation.setter                        | "File"                              | osPath("/path/to/initScript3")
+        "initScript"                     | PropertySetInvocation.setter                        | "Provider<RegularFile>"             | osPath("/path/to/initScript4")
+        "initScript"                     | PropertySetInvocation.method                        | "String"                            | osPath("/path/to/initScript5")
 
-        "skipUnresolved"                 | toProviderSet(property) | true                                                        | _                                                 | "Boolean"
-        "skipUnresolved"                 | toProviderSet(property) | true                                                        | _                                                 | "Provider<Boolean>"
-        "skipUnresolved"                 | toSetter(property)      | true                                                        | _                                                 | "Boolean"
-        "skipUnresolved"                 | toSetter(property)      | true                                                        | _                                                 | "Provider<Boolean>"
+        "skipUnresolved"                 | PropertySetInvocation.providerSet                   | "Boolean"                           | true
+        "skipUnresolved"                 | PropertySetInvocation.providerSet                   | "Provider<Boolean>"                 | true
+        "skipUnresolved"                 | PropertySetInvocation.setter                        | "Boolean"                           | true
+        "skipUnresolved"                 | PropertySetInvocation.setter                        | "Provider<Boolean>"                 | true
 
-        "yarnWorkspaces"                 | toProviderSet(property) | true                                                        | _                                                 | "Boolean"
-        "yarnWorkspaces"                 | toProviderSet(property) | true                                                        | _                                                 | "Provider<Boolean>"
-        "yarnWorkspaces"                 | toSetter(property)      | true                                                        | _                                                 | "Boolean"
-        "yarnWorkspaces"                 | toSetter(property)      | true                                                        | _                                                 | "Provider<Boolean>"
+        "yarnWorkspaces"                 | PropertySetInvocation.providerSet                   | "Boolean"                           | true
+        "yarnWorkspaces"                 | PropertySetInvocation.providerSet                   | "Provider<Boolean>"                 | true
+        "yarnWorkspaces"                 | PropertySetInvocation.setter                        | "Boolean"                           | true
+        "yarnWorkspaces"                 | PropertySetInvocation.setter                        | "Provider<Boolean>"                 | true
 
-        value = wrapValueBasedOnType(rawValue, type, wrapValueFallback)
-        expectedValue = returnValue == _ ? rawValue : returnValue
+        setter = new PropertySetterWriter(subjectUnderTestName, property)
+            .set(rawValue, type)
+            .toScript(method)
+            .serialize(wrapValueFallback)
+
+        getter = new PropertyGetterTaskWriter(setter)
     }
 
     @Unroll
@@ -387,69 +377,67 @@ abstract class SnykCheckBaseIntegrationSpec<T extends SnykTask> extends SnykTask
     }
 
     @Unroll()
-    def "composes correct CLI string from #setter -> #expected"() {
+    def "composes correct CLI option #flag from property #property with value #value"() {
 
         given: "a snyk wrapper"
         setSnykWrapper(true, subjectUnderTestName)
 
-        and: "a set of properties being set onto the task"
-        if (setter.concat("file")) {
-            createFile(mockFile)
-        }
-        def platformProjectDir = projectDir.path.split("\\\\").join("/")
-        setter = setter.replaceAll("#projectDir#", platformProjectDir)
-        buildFile << "\n${subjectUnderTestName}.${setter}"
-
         when:
-        def result = runTasksSuccessfully(subjectUnderTestName)
-        expected = expected.replaceAll("#projectDir#", escapedPath(projectDir.path))
+        def result = runTasksSuccessfully(subjectUnderTestName, setter)
+        def query = new PropertyQuery(pattern, this, result.standardOutput, new CommandLinePropertyEvaluation())
+        query.withFilePathsRelativeToProject()
 
         then:
-        outputContains(result, expected)
+        query.matches(value, type)
 
         where:
-        setter                                                                | flags
+        property                         | type           | value                                           | flag
         // TestOption
-        "allProjects=true"                                                    | "--all-projects"
-        "projectName=${wrap("pancakes")}"                                     | "--project-name=pancakes"
-        "detectionDepth=7"                                                    | "--detection-depth=7"
-        "exclude=[file(${wrap("foo.bar")})]"                                  | "--exclude=${new File("#projectDir#/foo.bar").path}"
-        "pruneRepeatedSubDependencies=true"                                   | "--prune-repeated-subdependencies"
-        "printDependencies=true"                                              | "--print-deps"
-        "remoteRepoUrl=${wrap("foo.bar/pancakes")}"                           | "--remote-repo-url"
-        "includeDevelopmentDependencies=true"                                 | "--dev"
-        "orgName=${wrap("PANCAKES")}"                                         | "--org=PANCAKES"
-        "packageFile = ${wrapValueBasedOnType("#projectDir#/foo.bar", File)}" | "--file=foo.bar"
-        "packageManager = ${wrapValueBasedOnType("nuget", String)}"           | "--package-manager=nuget"
-        "ignorePolicy=true"                                                   | "--ignore-policy"
-        "showVulnerablePaths=${wrapValueBasedOnType("all", String)}"          | "--show-vulnerable-paths=all"
-        "targetReference=${wrapValueBasedOnType("foobar", String)}"           | "--target-reference"
-        "policyPath=file(${wrapValueBasedOnType("foo.bar", String)})"         | "--policy-path=${new File("#projectDir#/foo.bar").path}"
-        "printJson=true"                                                      | "--json"
-        "jsonOutputPath=file(${wrapValueBasedOnType("foo.bar", String)})"     | "--json-file-output=${new File("#projectDir#/foo.bar").path}"
-        "printSarif=true"                                                     | "--sarif"
-        "sarifOutputPath=file(${wrapValueBasedOnType("foo.bar", String)})"    | "--sarif-file-output=${new File("#projectDir#/foo.bar").path}"
-        "severityThreshold=${wrap("critical")}"                               | "--severity-threshold=critical"
-        "failOn=${wrap("all")}"                                               | "--fail-on=all"
+        "allProjects"                    | Boolean        | true                                            | "--all-projects"
+        "projectName"                    | String         | "pancakes"                                      | "--project-name"
+        "detectionDepth"                 | Integer        | 7                                               | "--detection-depth"
+        "exclude"                        | "List<File>"   | TestValue.projectFile("foo.bar")                | "--exclude"
+        "pruneRepeatedSubDependencies"   | Boolean        | true                                            | "--prune-repeated-subdependencies"
+        "printDependencies"              | Boolean        | true                                            | "--print-deps"
+        "remoteRepoUrl"                  | String         | "foo.bar/pancakes"                              | "--remote-repo-url"
+        "includeDevelopmentDependencies" | Boolean        | true                                            | "--dev"
+        "orgName"                        | String         | "PANCAKES"                                      | "--org"
+        "packageFile"                    | File           | TestValue.set("foo.bar").expect("foo.bar")      | "--file"
+        "packageManager"                 | String         | "nuget"                                         | "--package-manager"
+        "ignorePolicy"                   | Boolean        | true                                            | "--ignore-policy"
+        "showVulnerablePaths"            | String         | "all"                                           | "--show-vulnerable-paths"
+        "targetReference"                | String         | "foobar"                                        | "--target-reference"
+        "policyPath"                     | File           | "foo.bar"                                       | "--policy-path"
+        "printJson"                      | Boolean        | true                                            | "--json"
+        "jsonOutputPath"                 | File           | "foo.bar"                                       | "--json-file-output"
+        "printSarif"                     | Boolean        | true                                            | "--sarif"
+        "sarifOutputPath"                | File           | "foo.bar"                                       | "--sarif-file-output"
+        "severityThreshold"              | String         | "critical"                                      | "--severity-threshold"
+        "failOn"                         | FailOnOption   | FailOnOption.all                                | "--fail-on"
         // ProjectOption
-        "scanAllUnmanaged=true"                                               | "--scan-all-unmanaged"
-        "subProject=${wrap("foobar")}"                                        | "--sub-project=foobar"
-        "allSubProjects=true"                                                 | "--all-sub-projects"
-        "configurationMatching=${wrap("foobar")}"                             | "--configuration-matching=foobar"
-        "configurationAttributes=[${wrap("foo")},${wrap("bar")}]"             | "--configuration-attributes=foo,bar"
-        "initScript=${wrapValueBasedOnType("#projectDir#/foo.bar", File)}"    | "--init-script=${new File("#projectDir#/foo.bar").path}"
-        "reachable=true"                                                      | "--reachable"
-        "reachableTimeout=7"                                                  | "--reachable-timeout=7"
-        "assetsProjectName=true"                                              | "--assets-project-name"
-        "projectNamePrefix=${wrap("foobar")}"                                 | "--project-name-prefix=foobar"
-        "strictOutOfSync=true"                                                | "--strict-out-of-sync"
-        "yarnWorkspaces=true"                                                 | "--yarn-workspaces"
-        "skipUnresolved=true"                                                 | "--skip-unresolved"
-        "command=${wrap("foobar")}"                                           | "--command=foobar"
-        "debug=true"                                                          | "-d"
+        "scanAllUnmanaged"               | Boolean        | true                                            | "--scan-all-unmanaged"
+        "subProject"                     | String         | "foobar"                                        | "--sub-project"
+        "allSubProjects"                 | Boolean        | true                                            | "--all-sub-projects"
+        "configurationMatching"          | String         | "foobar"                                        | "--configuration-matching"
+        "configurationAttributes"        | "List<String>" | TestValue.set(["foo", "bar"]).expect("foo,bar") | "--configuration-attributes"
+        "initScript"                     | File           | "foo.bar"                                       | "--init-script"
+        "reachable"                      | Boolean        | true                                            | "--reachable"
+        "reachableTimeout"               | Integer        | 7                                               | "--reachable-timeout"
+        "assetsProjectName"              | Boolean        | true                                            | "--assets-project-name"
+        "projectNamePrefix"              | String         | "foobar"                                        | "--project-name-prefix"
+        "strictOutOfSync"                | Boolean        | true                                            | "--strict-out-of-sync"
+        "yarnWorkspaces"                 | Boolean        | true                                            | "--yarn-workspaces"
+        "skipUnresolved"                 | Boolean        | true                                            | "--skip-unresolved"
+        "command"                        | String         | "foobar"                                        | "--command"
+        "debug"                          | Boolean        | true                                            | "-d"
 
-        expected = flags.toString().empty ? commandName : "${commandName} ${flags}"
-        mockFile = "foo.bar"
+        setter = new PropertySetterWriter(subjectUnderTestName, property)
+            .set(value, type)
+            .serialize(wrapValueFallback)
+            .toScript(PropertySetInvocation.assignment)
+            .withFilesRelativeToProjectDirectory(true)
+
+        pattern = flag.toString().empty ? commandName : "${commandName} ${flag}"
     }
 
     @Override

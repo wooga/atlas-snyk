@@ -19,6 +19,7 @@ package wooga.gradle.snyk
 import com.wooga.gradle.PlatformUtils
 import com.wooga.gradle.PropertyLookup
 import com.wooga.gradle.test.IntegrationSpec
+import com.wooga.spock.extensions.snyk.Snyk
 import org.gradle.api.file.Directory
 import spock.lang.Shared
 import wooga.gradle.snyk.cli.*
