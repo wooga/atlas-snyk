@@ -26,10 +26,6 @@ class Report extends SnykCheckBase {
 
     Report() {
         reports.html.required.set(true)
-    }
-
-    @Override
-    protected Boolean getIgnoreExitValue() {
-        true
+        ignoreExitValue.set(true)
     }
 }

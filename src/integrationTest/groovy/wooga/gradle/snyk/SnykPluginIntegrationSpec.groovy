@@ -206,6 +206,9 @@ class SnykPluginIntegrationSpec extends SnykIntegrationSpec {
         Monitor           | "debug"                          | true                                 | "Boolean"                         | ConventionSource.extension(extensionName, property)                 | _          || _
         Report            | "debug"                          | true                                 | "Boolean"                         | ConventionSource.extension(extensionName, property)                 | _          || _
 
+        Test              | "ignoreExitValue"                | true                                 | "Boolean"                         | ConventionSource.extension(extensionName, property)                 | _          || _
+        Monitor           | "ignoreExitValue"                | true                                 | "Boolean"                         | ConventionSource.extension(extensionName, property)                 | _          || _
+        Report            | "ignoreExitValue"                | true                                 | "Boolean"                         | ConventionSource.extension(extensionName, property)                 | _          || _
         value = (type != _) ? wrapValueBasedOnType(rawValue, type.toString(), wrapValueFallback) : rawValue
         testValue = (expectedValue == _) ? rawValue : expectedValue
     }
@@ -652,6 +655,13 @@ class SnykPluginIntegrationSpec extends SnykIntegrationSpec {
         "autoDownload"                   | toProviderSet(property) | true                                                            | _                                                                          | "Provider<Boolean>"                         | PropertyLocation.script
         "autoDownload"                   | toProviderSet(property) | false                                                           | _                                                                          | "Boolean"                                   | PropertyLocation.script
 
+        "ignoreExitValue"                | _                       | _                                                               | false                                                                      | "Provider<Boolean>"                         | PropertyLocation.none
+        "ignoreExitValue"                | _                       | "true"                                                          | true                                                                       | _                                           | PropertyLocation.environment
+        "ignoreExitValue"                | _                       | "true"                                                          | true                                                                       | _                                           | PropertyLocation.property
+        "ignoreExitValue"                | toSetter(property)      | true                                                            | _                                                                          | "Provider<Boolean>"                         | PropertyLocation.script
+        "ignoreExitValue"                | toSetter(property)      | false                                                           | _                                                                          | "Boolean"                                   | PropertyLocation.script
+        "ignoreExitValue"                | toProviderSet(property) | true                                                            | _                                                                          | "Provider<Boolean>"                         | PropertyLocation.script
+        "ignoreExitValue"                | toProviderSet(property) | false                                                           | _                                                                          | "Boolean"                                   | PropertyLocation.script
         value = (type != _) ? wrapValueBasedOnType(rawValue, type.toString(), wrapValueFallback) : rawValue
         providedValue = (location == PropertyLocation.script) ? type : value
         testValue = (expectedValue == _) ? rawValue : expectedValue

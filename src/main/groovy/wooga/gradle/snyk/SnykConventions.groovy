@@ -391,4 +391,10 @@ class SnykConventions {
             "snyk.autoDownload",
             false
     )
+
+    static final PropertyLookup ignoreExitValue = new PropertyLookup(
+            "SNYK_IGNORE_EXIT_VALUE",
+            "snyk.ignoreExitValue",
+            null
+    )
 }

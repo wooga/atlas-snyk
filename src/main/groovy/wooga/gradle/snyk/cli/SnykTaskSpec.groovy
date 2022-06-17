@@ -97,4 +97,20 @@ trait SnykTaskSpec extends BaseSpec {
         workingDirectory.set(value)
     }
 
+    private final Property<Boolean> ignoreExitValue = objects.property(Boolean)
+
+    @Internal
+    Property<Boolean> getIgnoreExitValue() {
+        ignoreExitValue
+    }
+
+    void setIgnoreExitValue(Provider<Boolean> value) {
+        ignoreExitValue.set(value)
+    }
+
+    void setIgnoreExitValue(Boolean value) {
+        ignoreExitValue.set(value)
+    }
+
+
 }
