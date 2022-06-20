@@ -53,11 +53,6 @@ abstract class SnykTask extends DefaultTask
         outputs.upToDateWhen { false }
     }
 
-    @Internal
-    protected Boolean getIgnoreExitValue() {
-        false
-    }
-
     @TaskAction
     protected void exec() {
 
@@ -102,7 +97,7 @@ abstract class SnykTask extends DefaultTask
         })
 
         postAction(execResult)
-        if(!ignoreExitValue) {
+        if(!ignoreExitValue.getOrElse(false) ) {
             handleExitCode(execResult.exitValue)
         }
     }

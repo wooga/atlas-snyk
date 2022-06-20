@@ -257,6 +257,7 @@ class SnykPlugin implements Plugin<Project>, ProjectRegistrationHandler {
         extension.jsonReportsEnabled.convention(parentExtension.jsonReportsEnabled)
         extension.sarifReportsEnabled.convention(parentExtension.sarifReportsEnabled)
         extension.htmlReportsEnabled.convention(parentExtension.htmlReportsEnabled)
+        extension.ignoreExitValue.convention(parentExtension.ignoreExitValue)
 
         extension
     }
@@ -409,8 +410,8 @@ class SnykPlugin implements Plugin<Project>, ProjectRegistrationHandler {
         extension.jsonReportsEnabled.convention(SnykConventions.jsonReportsEnabled.getBooleanValueProvider(project))
         extension.sarifReportsEnabled.convention(SnykConventions.sarifReportsEnabled.getBooleanValueProvider(project))
         extension.htmlReportsEnabled.convention(SnykConventions.htmlReportsEnabled.getBooleanValueProvider(project))
+        extension.ignoreExitValue.convention(SnykConventions.ignoreExitValue.getBooleanValueProvider(project))
         extension
-
     }
 
     private static mapExtensionPropertiesToBaseTask(SnykTask task, SnykPluginExtension extension, Project project) {
@@ -445,6 +446,7 @@ class SnykPlugin implements Plugin<Project>, ProjectRegistrationHandler {
         task.severityThreshold.convention(extension.severityThreshold)
         task.failOn.convention(extension.failOn)
         task.compilerArguments.convention(extension.compilerArguments)
+        task.ignoreExitValue.convention(extension.ignoreExitValue)
 
         task.strictOutOfSync.convention(extension.strictOutOfSync)
 
