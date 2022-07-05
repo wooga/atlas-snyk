@@ -16,15 +16,16 @@
 
 package wooga.gradle.snyk.tasks
 
-
+import com.wooga.gradle.test.PropertyLocation
 import com.wooga.gradle.test.PropertyQueryTaskWriter
+import com.wooga.gradle.test.queries.TestValue
+import com.wooga.gradle.test.writers.PropertyGetterTaskWriter
+import com.wooga.gradle.test.writers.PropertySetInvocation
+import com.wooga.gradle.test.writers.PropertySetterWriter
 import spock.lang.Unroll
 import wooga.gradle.snyk.cli.BusinessCriticalityOption
 import wooga.gradle.snyk.cli.EnvironmentOption
 import wooga.gradle.snyk.cli.LifecycleOption
-
-import static com.wooga.gradle.test.PropertyUtils.toProviderSet
-import static com.wooga.gradle.test.PropertyUtils.toSetter
 
 class MonitorIntegrationSpec extends SnykCheckBaseIntegrationSpec<Monitor> {
 
@@ -35,96 +36,82 @@ class MonitorIntegrationSpec extends SnykCheckBaseIntegrationSpec<Monitor> {
 
     @Unroll("can set property #property with cli option #cliOption")
     def "can set property via cli option"() {
-        given: "a task to read back the value"
-        def query = new PropertyQueryTaskWriter("${subjectUnderTestName}.${property}")
-        query.write(buildFile)
 
-        and: "tasks to execute"
-        def tasks = [subjectUnderTestName, cliOption]
-        if (rawValue != _) {
-            tasks.add(value)
-        }
-        tasks.add(query.taskName)
-
-        and: "disable subject under test to no fail"
+        given: "disable subject under test to no fail"
         appendToSubjectTask("enabled=false")
 
-        when:
-        def result = runTasksSuccessfully(*tasks)
-
-        then:
-        query.matches(result, expectedValue)
+        expect:
+        runPropertyQuery(subjectUnderTestName, getter, setter).matches(rawValue)
 
         where:
-        property                     | cliOption                        | rawValue                                                               | returnValue | type
-        "trustPolicies"              | "--trust-policies"               | _                                                                      | true        | "Boolean"
-        "projectEnvironment"         | "--project-environment"          | [EnvironmentOption.backend, EnvironmentOption.frontend]                | _           | "CLIList"
-        "projectLifecycle"           | "--project-lifecycle"            | [LifecycleOption.production, LifecycleOption.development]              | _           | "CLIList"
-        "projectBusinessCriticality" | "--project-business-criticality" | [BusinessCriticalityOption.critical, BusinessCriticalityOption.medium] | _           | "CLIList"
-        "projectTags"                | "--project-tags"                 | ["foo": "test", "bar": "baz"]                                          | _           | "CLIMap"
-        "projectTags"                | "--tags"                         | ["foo": "test", "bar": "baz"]                                          | _           | "CLIMap"
+        property                     | cliOption                        | rawValue                                                               | type
+        "trustPolicies"              | "--trust-policies"               | true                                                                   | "Boolean"
+        "projectEnvironment"         | "--project-environment"          | [EnvironmentOption.backend, EnvironmentOption.frontend]                | "CLIList"
+        "projectLifecycle"           | "--project-lifecycle"            | [LifecycleOption.production, LifecycleOption.development]              | "CLIList"
+        "projectBusinessCriticality" | "--project-business-criticality" | [BusinessCriticalityOption.critical, BusinessCriticalityOption.medium] | "CLIList"
+        "projectTags"                | "--project-tags"                 | ["foo": "test", "bar": "baz"]                                          | "CLIMap"
+        "projectTags"                | "--tags"                         | ["foo": "test", "bar": "baz"]                                          | "CLIMap"
 
-        value = wrapValueBasedOnType(rawValue, type, wrapValueFallback)
-        expectedValue = returnValue == _ ? rawValue : returnValue
+        setter = new PropertySetterWriter(subjectUnderTestName, property)
+            .set(rawValue, type)
+            .toCommandLine(cliOption)
+            .serialize(wrapValueFallback)
+
+        getter = new PropertyGetterTaskWriter(setter)
     }
 
     @Unroll("can set property #property with #method and type #type")
     def "can set property SnykTask"() {
-        given: "a task to read back the value"
-        def query = new PropertyQueryTaskWriter("${subjectUnderTestName}.${property}")
-        query.write(buildFile)
 
-        and: "a set property"
-        appendToSubjectTask("${method}($value)")
-
-        when:
-        def result = runTasksSuccessfully(query.taskName)
-
-        then:
-        query.matches(result, expectedValue)
+        expect:
+        runPropertyQuery(getter, setter).matches(rawValue)
 
         where:
-        property                     | method                  | rawValue                                                  | returnValue                      | type
-        "trustPolicies"              | toProviderSet(property) | true                                                      | _                                | "Boolean"
-        "trustPolicies"              | toProviderSet(property) | false                                                     | _                                | "Provider<Boolean>"
-        "trustPolicies"              | toSetter(property)      | true                                                      | _                                | "Boolean"
-        "trustPolicies"              | toSetter(property)      | false                                                     | _                                | "Provider<Boolean>"
+        property                     | method                                     | rawValue                                                                   | type
+        "trustPolicies"              | PropertySetInvocation.providerSet          | true                                                                       | "Boolean"
+        "trustPolicies"              | PropertySetInvocation.providerSet          | false                                                                      | "Provider<Boolean>"
+        "trustPolicies"              | PropertySetInvocation.setter               | true                                                                       | "Boolean"
+        "trustPolicies"              | PropertySetInvocation.setter               | false                                                                      | "Provider<Boolean>"
 
-        "projectEnvironment"         | toProviderSet(property) | [EnvironmentOption.backend]                               | _                                | "List<EnvironmentOption>"
-        "projectEnvironment"         | toProviderSet(property) | [EnvironmentOption.backend, EnvironmentOption.frontend]   | _                                | "Provider<List<EnvironmentOption>>"
-        "projectEnvironment"         | toSetter(property)      | [EnvironmentOption.distributed, EnvironmentOption.onprem] | _                                | "List<EnvironmentOption>"
-        "projectEnvironment"         | toSetter(property)      | [EnvironmentOption.internal, EnvironmentOption.hosted]    | _                                | "Provider<List<EnvironmentOption>>"
-        "projectEnvironment"         | property                | [EnvironmentOption.mobile, EnvironmentOption.external]    | _                                | "List<EnvironmentOption>"
-        "projectEnvironment"         | property                | EnvironmentOption.internal                                | [EnvironmentOption.internal]     | "EnvironmentOption"
-        "projectEnvironment"         | property                | [EnvironmentOption.backend, EnvironmentOption.frontend]   | _                                | "EnvironmentOption..."
+        "projectEnvironment"         | PropertySetInvocation.providerSet          | [EnvironmentOption.backend]                                                | "List<EnvironmentOption>"
+        "projectEnvironment"         | PropertySetInvocation.providerSet          | [EnvironmentOption.backend, EnvironmentOption.frontend]                    | "Provider<List<EnvironmentOption>>"
+        "projectEnvironment"         | PropertySetInvocation.setter               | [EnvironmentOption.distributed, EnvironmentOption.onprem]                  | "List<EnvironmentOption>"
+        "projectEnvironment"         | PropertySetInvocation.setter               | [EnvironmentOption.internal, EnvironmentOption.hosted]                     | "Provider<List<EnvironmentOption>>"
+        "projectEnvironment"         | PropertySetInvocation.method               | [EnvironmentOption.mobile, EnvironmentOption.external]                     | "List<EnvironmentOption>"
+        "projectEnvironment"         | PropertySetInvocation.method               | TestValue.set(EnvironmentOption.internal).expectList()                     | "EnvironmentOption"
+        "projectEnvironment"         | PropertySetInvocation.method               | [EnvironmentOption.backend, EnvironmentOption.frontend]                    | "EnvironmentOption..."
 
-        "projectLifecycle"           | toProviderSet(property) | [LifecycleOption.production, LifecycleOption.development] | _                                | "List<LifecycleOption>"
-        "projectLifecycle"           | toProviderSet(property) | [LifecycleOption.sandbox, LifecycleOption.development]    | _                                | "Provider<List<LifecycleOption>>"
-        "projectLifecycle"           | toSetter(property)      | [LifecycleOption.production, LifecycleOption.sandbox]     | _                                | "List<LifecycleOption>"
-        "projectLifecycle"           | toSetter(property)      | [LifecycleOption.production, LifecycleOption.development] | _                                | "Provider<List<LifecycleOption>>"
-        "projectLifecycle"           | property                | [LifecycleOption.production, LifecycleOption.development] | _                                | "List<LifecycleOption>"
-        "projectLifecycle"           | property                | LifecycleOption.sandbox                                   | [LifecycleOption.sandbox]        | "LifecycleOption"
-        "projectLifecycle"           | property                | [LifecycleOption.production, LifecycleOption.development] | _                                | "LifecycleOption..."
+        "projectLifecycle"           | PropertySetInvocation.providerSet          | [LifecycleOption.production, LifecycleOption.development]                  | "List<LifecycleOption>"
+        "projectLifecycle"           | PropertySetInvocation.providerSet          | [LifecycleOption.sandbox, LifecycleOption.development]                     | "Provider<List<LifecycleOption>>"
+        "projectLifecycle"           | PropertySetInvocation.setter               | [LifecycleOption.production, LifecycleOption.sandbox]                      | "List<LifecycleOption>"
+        "projectLifecycle"           | PropertySetInvocation.setter               | [LifecycleOption.production, LifecycleOption.development]                  | "Provider<List<LifecycleOption>>"
+        "projectLifecycle"           | PropertySetInvocation.method               | [LifecycleOption.production, LifecycleOption.development]                  | "List<LifecycleOption>"
+        "projectLifecycle"           | PropertySetInvocation.method               | TestValue.set(LifecycleOption.sandbox).expectList()                        | "LifecycleOption"
+        "projectLifecycle"           | PropertySetInvocation.method               | [LifecycleOption.production, LifecycleOption.development]                  | "LifecycleOption..."
 
-        "projectBusinessCriticality" | toProviderSet(property) | [BusinessCriticalityOption.critical]                      | _                                | "List<BusinessCriticalityOption>"
-        "projectBusinessCriticality" | toProviderSet(property) | [BusinessCriticalityOption.high]                          | _                                | "Provider<List<BusinessCriticalityOption>>"
-        "projectBusinessCriticality" | toSetter(property)      | [BusinessCriticalityOption.low]                           | _                                | "List<BusinessCriticalityOption>"
-        "projectBusinessCriticality" | toSetter(property)      | [BusinessCriticalityOption.medium]                        | _                                | "Provider<List<BusinessCriticalityOption>>"
-        "projectBusinessCriticality" | property                | [BusinessCriticalityOption.critical]                      | _                                | "List<BusinessCriticalityOption>"
-        "projectBusinessCriticality" | property                | BusinessCriticalityOption.high                            | [BusinessCriticalityOption.high] | "BusinessCriticalityOption"
-        "projectBusinessCriticality" | property                | [BusinessCriticalityOption.low]                           | _                                | "BusinessCriticalityOption..."
+        "projectBusinessCriticality" | PropertySetInvocation.providerSet          | [BusinessCriticalityOption.critical]                                       | "List<BusinessCriticalityOption>"
+        "projectBusinessCriticality" | PropertySetInvocation.providerSet          | [BusinessCriticalityOption.high]                                           | "Provider<List<BusinessCriticalityOption>>"
+        "projectBusinessCriticality" | PropertySetInvocation.setter               | [BusinessCriticalityOption.low]                                            | "List<BusinessCriticalityOption>"
+        "projectBusinessCriticality" | PropertySetInvocation.setter               | [BusinessCriticalityOption.medium]                                         | "Provider<List<BusinessCriticalityOption>>"
+        "projectBusinessCriticality" | PropertySetInvocation.method               | [BusinessCriticalityOption.critical]                                       | "List<BusinessCriticalityOption>"
+        "projectBusinessCriticality" | PropertySetInvocation.method               | TestValue.set(BusinessCriticalityOption.high).expectList()                 | "BusinessCriticalityOption"
+        "projectBusinessCriticality" | PropertySetInvocation.method               | [BusinessCriticalityOption.low]                                            | "BusinessCriticalityOption..."
 
-        "projectTags"                | toProviderSet(property) | ["foo": "test", "bar": "baz"]                             | _                                | "Map<String, String>"
-        "projectTags"                | toProviderSet(property) | ["foo": "test", "bar": "baz"]                             | _                                | "Provider<Map<String, String>>"
-        "projectTags"                | toSetter(property)      | ["foo": "test", "bar": "baz"]                             | _                                | "Map<String, String>"
-        "projectTags"                | toSetter(property)      | ["foo": "test", "bar": "baz"]                             | _                                | "Provider<Map<String, String>>"
-        "projectTags"                | property                | ["foo": "test", "bar": "baz"]                             | _                                | "Map<String, String>"
-        "projectTags"                | property                | ["foo": "test", "bar": "baz"]                             | _                                | "Provider<Map<String, String>>"
-        "projectTags"                | property                | "foo= test, bar=baz"                                      | ["foo": "test", "bar": "baz"]    | "String"
-        "projectTags"                | "tags"                  | " foo=test,bar= baz "                                     | ["foo": "test", "bar": "baz"]    | "String"
+        "projectTags"                | PropertySetInvocation.providerSet          | ["foo": "test", "bar": "baz"]                                              | "Map<String, String>"
+        "projectTags"                | PropertySetInvocation.providerSet          | ["foo": "test", "bar": "baz"]                                              | "Provider<Map<String, String>>"
+        "projectTags"                | PropertySetInvocation.setter               | ["foo": "test", "bar": "baz"]                                              | "Map<String, String>"
+        "projectTags"                | PropertySetInvocation.setter               | ["foo": "test", "bar": "baz"]                                              | "Provider<Map<String, String>>"
+        "projectTags"                | PropertySetInvocation.method               | ["foo": "test", "bar": "baz"]                                              | "Map<String, String>"
+        "projectTags"                | PropertySetInvocation.method               | ["foo": "test", "bar": "baz"]                                              | "Provider<Map<String, String>>"
+        "projectTags"                | PropertySetInvocation.method               | TestValue.set("foo= test, bar=baz").expect(["foo": "test", "bar": "baz"])  | "String"
+        "projectTags"                | PropertySetInvocation.customSetter("tags") | TestValue.set(" foo=test,bar= baz ").expect(["foo": "test", "bar": "baz"]) | "String"
 
-        value = wrapValueBasedOnType(rawValue, type, wrapValueFallback)
-        expectedValue = returnValue == _ ? rawValue : returnValue
+        setter = new PropertySetterWriter(subjectUnderTestName, property)
+            .set(rawValue, type)
+            .toScript(method)
+            .serialize(wrapValueFallback)
+
+        getter = new PropertyGetterTaskWriter(setter)
     }
 
     @Unroll()

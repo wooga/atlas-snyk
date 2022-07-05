@@ -61,7 +61,6 @@ trait SnykTestSpec extends BaseSpec {
 
     private final ListProperty<File> exclude = objects.listProperty(File)
 
-    // TODO: Make sure to check that the File objects passed in are actually directories
     @Input
     @Optional
     ListProperty<File> getExclude() {

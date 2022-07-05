@@ -18,6 +18,10 @@ package wooga.gradle.snyk.tasks
 
 
 import com.wooga.gradle.test.PropertyQueryTaskWriter
+import com.wooga.gradle.test.TaskIntegrationSpec
+import com.wooga.gradle.test.writers.PropertyGetterTaskWriter
+import com.wooga.gradle.test.writers.PropertySetInvocation
+import com.wooga.gradle.test.writers.PropertySetterWriter
 import org.gradle.api.file.Directory
 import spock.lang.Unroll
 import wooga.gradle.snyk.SnykIntegrationSpec
@@ -28,31 +32,7 @@ import static com.wooga.gradle.PlatformUtils.escapedPath
 import static com.wooga.gradle.test.PropertyUtils.toProviderSet
 import static com.wooga.gradle.test.PropertyUtils.toSetter
 
-abstract class SnykTaskIntegrationSpec<T extends SnykTask> extends SnykIntegrationSpec {
-
-    Class<T> getSubjectUnderTestClass() {
-        if (!_sutClass) {
-            try {
-                this._sutClass = (Class<T>) ((ParameterizedType) this.getClass().getGenericSuperclass())
-                        .getActualTypeArguments()[0];
-            }
-            catch (Exception e) {
-                this._sutClass = (Class<T>) SnykTask
-            }
-        }
-        _sutClass
-    }
-    private Class<T> _sutClass
-
-    @Override
-    String getSubjectUnderTestName() {
-        "${subjectUnderTestClass.simpleName.uncapitalize()}Test"
-    }
-
-    @Override
-    String getSubjectUnderTestTypeName() {
-        subjectUnderTestClass.getTypeName()
-    }
+abstract class SnykTaskIntegrationSpec<T extends SnykTask> extends SnykIntegrationSpec implements TaskIntegrationSpec<T> {
 
     def setup() {
         environmentVariables.set("SNYK_TOKEN", System.getenv("ATLAS_SNYK_INTEGRATION_TOKEN"))
@@ -85,87 +65,77 @@ abstract class SnykTaskIntegrationSpec<T extends SnykTask> extends SnykIntegrati
 
     @Unroll("can set property #property with cli option #cliOption")
     def "can set property via cli option"() {
-        given: "a task to read back the value"
-        def query = new PropertyQueryTaskWriter("${subjectUnderTestName}.${property}")
-        query.write(buildFile)
 
-        and: "tasks to execute"
-        def tasks = [subjectUnderTestName, cliOption]
-        if (rawValue != _) {
-            tasks.add(value)
-        }
-        tasks.add(query.taskName)
-
-        and: "disable subject under test to no fail"
+        given: "disable subject under test to no fail"
         appendToSubjectTask("enabled=false")
 
-        when:
-        def result = runTasksSuccessfully(*tasks)
-
-        then:
-        query.matches(result, expectedValue)
+        expect:
+        runPropertyQuery(subjectUnderTestName, getter, setter).matches(rawValue)
 
         where:
-        property   | cliOption    | rawValue | returnValue | type
-        "insecure" | "--insecure" | _        | true        | "Boolean"
+        property   | cliOption    | rawValue | type
+        "insecure" | "--insecure" | true     | "Boolean"
 
-        value = wrapValueBasedOnType(rawValue, type, wrapValueFallback)
-        expectedValue = returnValue == _ ? rawValue : returnValue
+        setter = new PropertySetterWriter(subjectUnderTestName, property)
+            .set(rawValue, type)
+            .toCommandLine(cliOption)
+            .serialize(wrapValueFallback)
+
+        getter = new PropertyGetterTaskWriter(setter)
     }
 
     @Unroll("can set property #property with #method and type #type")
     def "can set property SnykTask"() {
-        given: "a task to read back the value"
-        def query = new PropertyQueryTaskWriter("${subjectUnderTestName}.${property}")
-        query.write(buildFile)
 
-        and: "a set property"
-        appendToSubjectTask("${method}($value)")
+        given: "disable subject under test to no fail"
+        appendToSubjectTask("enabled=false")
 
-        when:
-        def result = runTasksSuccessfully(query.taskName)
-
-        then:
-        query.matches(result, expectedValue)
+        expect:
+        runPropertyQuery(subjectUnderTestName, getter, setter).matches(rawValue)
 
         where:
-        property          | method                  | rawValue                     | returnValue | type
-        "token"           | toProviderSet(property) | "some_token"                 | _           | "String"
-        "token"           | toProviderSet(property) | "some_token"                 | _           | "Provider<String>"
-        "token"           | toSetter(property)      | "some_token"                 | _           | "String"
-        "token"           | toSetter(property)      | "some_token"                 | _           | "Provider<String>"
+        property          | method                            | rawValue                     | type
+        "token"           | PropertySetInvocation.providerSet | "some_token"                 | "String"
+        "token"           | PropertySetInvocation.providerSet | "some_token"                 | "Provider<String>"
+        "token"           | PropertySetInvocation.setter      | "some_token"                 | "String"
+        "token"           | PropertySetInvocation.setter      | "some_token"                 | "Provider<String>"
 
-        "logFile"         | toProviderSet(property) | osPath("/path/to/logFile")   | _           | "File"
-        "logFile"         | toProviderSet(property) | osPath("/path/to/logFile")   | _           | "Provider<RegularFile>"
-        "logFile"         | toSetter(property)      | osPath("/path/to/logFile")   | _           | "File"
-        "logFile"         | toSetter(property)      | osPath("/path/to/logFile")   | _           | "Provider<RegularFile>"
+        "logFile"         | PropertySetInvocation.providerSet | osPath("/path/to/logFile")   | "File"
+        "logFile"         | PropertySetInvocation.providerSet | osPath("/path/to/logFile")   | "Provider<RegularFile>"
+        "logFile"         | PropertySetInvocation.setter      | osPath("/path/to/logFile")   | "File"
+        "logFile"         | PropertySetInvocation.setter      | osPath("/path/to/logFile")   | "Provider<RegularFile>"
 
-        "executableName"  | toProviderSet(property) | "snyk1"                      | _           | "String"
-        "executableName"  | toProviderSet(property) | "snyk2"                      | _           | "Provider<String>"
-        "executableName"  | toSetter(property)      | "snyk3"                      | _           | "String"
-        "executableName"  | toSetter(property)      | "snyk4"                      | _           | "Provider<String>"
+        "executableName"  | PropertySetInvocation.providerSet | "snyk1"                      | "String"
+        "executableName"  | PropertySetInvocation.providerSet | "snyk2"                      | "Provider<String>"
+        "executableName"  | PropertySetInvocation.setter      | "snyk3"                      | "String"
+        "executableName"  | PropertySetInvocation.setter      | "snyk4"                      | "Provider<String>"
 
-        "snykPath"        | toProviderSet(property) | osPath("/path/to/snyk_home") | _           | "File"
-        "snykPath"        | toProviderSet(property) | osPath("/path/to/snyk_home") | _           | "Provider<Directory>"
-        "snykPath"        | toSetter(property)      | osPath("/path/to/snyk_home") | _           | "File"
-        "snykPath"        | toSetter(property)      | osPath("/path/to/snyk_home") | _           | "Provider<Directory>"
+        "snykPath"        | PropertySetInvocation.providerSet | osPath("/path/to/snyk_home") | "File"
+        "snykPath"        | PropertySetInvocation.providerSet | osPath("/path/to/snyk_home") | "Provider<Directory>"
+        "snykPath"        | PropertySetInvocation.setter      | osPath("/path/to/snyk_home") | "File"
+        "snykPath"        | PropertySetInvocation.setter      | osPath("/path/to/snyk_home") | "Provider<Directory>"
 
-        "insecure"        | toProviderSet(property) | true                         | _           | "Boolean"
-        "insecure"        | toProviderSet(property) | false                        | _           | "Provider<Boolean>"
-        "insecure"        | toSetter(property)      | true                         | _           | "Boolean"
-        "insecure"        | toSetter(property)      | false                        | _           | "Provider<Boolean>"
+        "insecure"        | PropertySetInvocation.providerSet | true                         | "Boolean"
+        "insecure"        | PropertySetInvocation.providerSet | false                        | "Provider<Boolean>"
+        "insecure"        | PropertySetInvocation.setter      | true                         | "Boolean"
+        "insecure"        | PropertySetInvocation.setter      | false                        | "Provider<Boolean>"
 
-        "debug"           | toProviderSet(property) | true                         | _           | "Boolean"
-        "debug"           | toProviderSet(property) | false                        | _           | "Provider<Boolean>"
-        "debug"           | toSetter(property)      | true                         | _           | "Boolean"
-        "debug"           | toSetter(property)      | false                        | _           | "Provider<Boolean>"
+        "debug"           | PropertySetInvocation.providerSet | true                         | "Boolean"
+        "debug"           | PropertySetInvocation.providerSet | false                        | "Provider<Boolean>"
+        "debug"           | PropertySetInvocation.setter      | true                         | "Boolean"
+        "debug"           | PropertySetInvocation.setter      | false                        | "Provider<Boolean>"
 
-        "ignoreExitValue" | toProviderSet(property) | true                         | _           | "Boolean"
-        "ignoreExitValue" | toProviderSet(property) | false                        | _           | "Provider<Boolean>"
-        "ignoreExitValue" | toSetter(property)      | true                         | _           | "Boolean"
-        "ignoreExitValue" | toSetter(property)      | false                        | _           | "Provider<Boolean>"
-        value = wrapValueBasedOnType(rawValue, type, wrapValueFallback)
-        expectedValue = returnValue == _ ? rawValue : returnValue
+        "ignoreExitValue" | PropertySetInvocation.providerSet | true                         | "Boolean"
+        "ignoreExitValue" | PropertySetInvocation.providerSet | false                        | "Provider<Boolean>"
+        "ignoreExitValue" | PropertySetInvocation.setter      | true                         | "Boolean"
+        "ignoreExitValue" | PropertySetInvocation.setter      | false                        | "Provider<Boolean>"
+
+        setter = new PropertySetterWriter(subjectUnderTestName, property)
+            .set(rawValue, type)
+            .toScript(method)
+            .serialize(wrapValueFallback)
+
+        getter = new PropertyGetterTaskWriter(setter)
     }
 
     @Unroll()
