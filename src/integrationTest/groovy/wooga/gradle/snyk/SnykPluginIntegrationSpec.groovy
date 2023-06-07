@@ -770,12 +770,11 @@ class SnykPluginIntegrationSpec extends SnykIntegrationSpec {
         """
 
         when:
-        def result = runTasks(snykTaskName)
+        def result = runTasks(snykTaskName, "--dry-run")
 
         then: "dependency task should run and run before the SnykTask"
-        def executedTasks = GradleSpecUtils.executedTasks(result.standardOutput)
-        def subjectTaskIndex = executedTasks.findIndexOf { it == ":${snykTaskName}" }
-        def dependencyIndex = executedTasks.findIndexOf { it == ":${dependency}" }
+        def subjectTaskIndex = result.standardOutput.indexOf(":${snykTaskName}".toString())
+        def dependencyIndex = result.standardOutput.indexOf(":${dependency}".toString())
         dependencyIndex > -1
         subjectTaskIndex > dependencyIndex
 

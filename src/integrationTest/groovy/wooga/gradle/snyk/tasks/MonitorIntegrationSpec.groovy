@@ -115,7 +115,7 @@ class MonitorIntegrationSpec extends SnykCheckBaseIntegrationSpec<Monitor> {
     }
 
     @Unroll()
-    def "composes correct CLI string from setters #setters -> #expected"() {
+    def "composes correct CLI string from setters #prop -> #expected"() {
 
         given: "a snyk wrapper"
         setSnykWrapper(true, subjectUnderTestName)
