@@ -18,6 +18,8 @@ package wooga.gradle.snyk.tasks
 
 import com.wooga.gradle.test.PropertyQueryTaskWriter
 import org.apache.commons.codec.digest.DigestUtils
+import org.mockserver.configuration.Configuration
+import org.mockserver.configuration.ConfigurationProperties
 import org.mockserver.integration.ClientAndServer
 import org.mockserver.logging.MockServerLogger
 import org.mockserver.socket.tls.KeyStoreFactory
@@ -30,10 +32,12 @@ import wooga.gradle.snyk.SnykPlugin
 import javax.net.ssl.HttpsURLConnection
 import java.lang.reflect.ParameterizedType
 import java.nio.file.Files
+import java.util.logging.Level
 
 import static com.wooga.gradle.PlatformUtils.windows
 import static com.wooga.gradle.test.PropertyUtils.toProviderSet
 import static com.wooga.gradle.test.PropertyUtils.toSetter
+import static org.mockserver.configuration.Configuration.configuration
 import static org.mockserver.integration.ClientAndServer.startClientAndServer
 import static org.mockserver.model.HttpOverrideForwardedRequest.forwardOverriddenRequest
 import static org.mockserver.model.HttpRequest.request
@@ -360,6 +364,10 @@ abstract class SnykInstallBaseIntegrationSpec<T extends SnykInstallSpec> extends
         // ensure all connection using HTTPS will use the SSL context defined by
         // MockServer to allow dynamically generated certificates to be accepted
         HttpsURLConnection.setDefaultSSLSocketFactory(new KeyStoreFactory(new MockServerLogger()).sslContext().getSocketFactory());
+
+        ConfigurationProperties.disableLogging(true)
+        ConfigurationProperties.maxLogEntries(10)
+        ConfigurationProperties.maxExpectations(10)
         def mockServer = startClientAndServer()
 
         System.setProperty("static.snyk.io.baseUrl", "https://localhost:${mockServer.getPort()}")
@@ -370,7 +378,7 @@ abstract class SnykInstallBaseIntegrationSpec<T extends SnykInstallSpec> extends
         and: "a proxy setup for any path not /cli/latest/release.json"
         forwardAllSnykRequests(mockServer)
         //Opens a webpage with logs and other useful information about the current proxy/mock server
-        //mockServer.openUI()
+//        mockServer.openUI()
 
         and: "a future snyk file"
         def expectedSnykFile = new File(projectDir, "${installDir}/${normalizedExecutableName}")
@@ -386,11 +394,15 @@ abstract class SnykInstallBaseIntegrationSpec<T extends SnykInstallSpec> extends
 
 
         when: "latest returns latest version"
+        mockServer.reset()
+
         //clear the forward
-        clearMockVersionRequests(mockServer, version, files)
-        mockServer.clear(request())
+//        clearMockVersionRequests(mockServer, version, files)
+//        mockServer.clear(request())
         forwardAllSnykRequests(mockServer)
 
+        Thread.yield()
+        Thread.sleep(10000)
         def result = runTasksSuccessfully(subjectUnderTestName)
 
         then:

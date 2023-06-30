@@ -20,6 +20,8 @@ withCredentials([string(credentialsId: 'atlas_plugins_sonar_token', variable: 's
                  string(credentialsId: 'snyk-integration-token', variable: 'ATLAS_SNYK_INTEGRATION_TOKEN'),
                  string(credentialsId: 'snyk-wooga-frontend-integration-token', variable: 'SNYK_TOKEN')
 ]) {
+    def testEnv = ["JAVA_OPTS":"-Xmx4096m"]
+
     buildGradlePlugin platforms: ['macos','windows','linux'],
-                      sonarToken: sonar_token
+                      sonarToken: sonar_token, testEnvironment: testEnv
 }

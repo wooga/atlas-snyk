@@ -58,7 +58,7 @@ class SnykInstall extends SnykInstallBase {
         }.memoize())
     }
 
-    private static Map<String, SnykDownloadAsset> fetchSnykReleases(String versionTag) {
+    protected static Map<String, SnykDownloadAsset> fetchSnykReleases(String versionTag) {
         def releasesURL = getReleaseJsonUrl(ensureVersionPrefix(versionTag))
         def result = new JsonSlurper().parse(new URL(releasesURL)) as Map
 

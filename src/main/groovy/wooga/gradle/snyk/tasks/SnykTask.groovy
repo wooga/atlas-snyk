@@ -84,7 +84,7 @@ abstract class SnykTask extends DefaultTask
                     executable _executable
                     args = _arguments
                     environment(_environment)
-                    ignoreExitValue = true
+                    setIgnoreExitValue(true)
                     standardOutput = getOutputStream(logFile.asFile.getOrNull())
                     errorOutput = getOutputStream(logFile.asFile.getOrNull())
 
